@@ -191,7 +191,7 @@ def calc_spatio_temp_params(gait_events, pelvis_position, foot_position, frame_r
                         np.max(hip_angles[1][stride[3]:stride[5]], axis=0) - np.min(hip_angles[1][stride[3]:stride[5]], axis=0)]) for stride in r_to_l_strides.T])
         
 
-        return [double_stance_support, step_length_avg, step_length_std, step_lengths, stride_length_SR, stance_time_ratio, knee_ROMs, knee_ROM_SR, hip_ROMs, stride_lengths]
+        return [double_stance_support, step_length_avg, step_length_std, step_length_SR, stride_length_SR, stance_time_ratio, knee_ROMs, knee_ROM_SR, hip_ROMs, stride_lengths]
         # return [double_stance_support, step_length_avg, step_length_std, step_lengths, stride_length_SR, stance_times, knee_ROMs, knee_ROM_SR, hip_ROMs]
 
     r_gait_events = gait_events[0]
@@ -264,14 +264,21 @@ def calc_spatio_temp_params(gait_events, pelvis_position, foot_position, frame_r
     # cadence in steps/min, doubled to get left and right steps
     cadence = (2 / avg_walk_time) * 60 # sec/min
 
-    double_stance_support, step_length_avg, step_length_std, step_length_SR, stride_length_SR, stance_time_ratio_ind, knee_ROMs, knee_ROM_SR, hip_ROMs, stride_lengths = calc_step_params(stride_time_avg)
-    # double_stance_support, step_length_avg, step_length_std, step_length_SR, stride_length_SR, stance_times, knee_ROMs, knee_ROM_SR, hip_ROMs = calc_step_params(stride_time_avg)
-    step_length_ratio = step_length_avg[0] / step_length_avg[1]
+    step_based_params = calc_step_params(stride_time_avg)
+    double_stance_support = step_based_params[0]
+    step_length_avg = step_based_params[1]
+    step_length_std = step_based_params[2]
+    step_length_SR = step_based_params[3]
+    stride_length_SR = step_based_params[4]
+    stance_time_ratio_ind = step_based_params[5]
+    knee_ROMs = step_based_params[6]
+    knee_ROM_SR = step_based_params[7]
+    hip_ROMs = step_based_params[8]
+    stride_lengths = step_based_params[9]
 
     spatio_temp_params = [stance_time_ratio, swing_time_ratio, double_stance_support,
                         step_length_avg, stride_length_avg, stride_time_avg, cadence, 
                         speed, stance_time_avg, stance_time_std, step_length_SR, stride_length_SR, stance_time_ratio_ind, knee_ROMs, hip_ROMs, stride_lengths]
-
 
     return spatio_temp_params
 
@@ -403,176 +410,49 @@ def visualize_strides(strides, fig_ax, signal_axis, trial_num, confidence_plot =
 
     # plt.show()
 
-# xsens_dot_data is dict. Each key corresponds to sensor location ('ur', 'p', etc.), with value having dot_data in numpy array
-def process_trial_data(trial_val, filename_trial, xsens_dot_data, is_dot_data_time_synced=True, control_data = False):
 
-    # default sample rate for MVN = 100Hz
-    frame_rate = 100
+'''
+Get various kinematic, movement, and positional signals from the .csv file
+'''
+def get_pelvis_euler_orientation(mvnxData):
+    return np.expand_dims(np.transpose([mvnxData['Pelvis Orient ' + plane] for plane in axis_planes]), axis=0)
 
-    # Read .csv file which has all the MVN data. MVNX files must be converted to .csv using the excel_from_mvnx.py script
-    mvnxData = pd.read_csv(filename_trial)
-    if not control_data:
-        print('Parsed excel file \'%s\'...' % (filename_trial))
-    sensors = get_default_sensor_index()        # get sensors from MVN data
+def get_sternum_euler_orientation(mvnxData):
+    return np.expand_dims(np.transpose([mvnxData['Sternum Orient ' + plane] for plane in axis_planes]), axis=0)
 
-    pelvis_euler_orientation = np.expand_dims(np.transpose([mvnxData['Pelvis Orient ' + plane] for plane in axis_planes]), axis=0)
-    sternum_euler_orientation = np.expand_dims(np.transpose([mvnxData['Sternum Orient ' + plane] for plane in axis_planes]), axis=0)
+def get_pelvis_position(mvnxData):
+    return np.transpose([mvnxData['Pelvis Position ' + plane] for plane in axis_planes])
 
+def get_hip_angles(mvnxData):
+    return np.array([ np.transpose([mvnxData['Right Hip ' + plane] for plane in joint_planes]),
+                                np.transpose([mvnxData['Left Hip ' + plane] for plane in joint_planes]) ])
 
-    # plt.figure()    
-    # plt.plot(pelvis_euler_orientation[0,:,2], color = 'black')
-    # plt.show()
-    # exit()
+def get_knee_angles(mvnxData):
+    return np.array([ np.transpose([mvnxData['Right Knee ' + plane] for plane in joint_planes]),
+                                np.transpose([mvnxData['Left Knee ' + plane] for plane in joint_planes]) ])
 
-    knee_angles = np.array([ np.transpose([mvnxData['Right Knee ' + plane] for plane in joint_planes]),
-                            np.transpose([mvnxData['Left Knee ' + plane] for plane in joint_planes]) ])
+def get_ankle_angles(mvnxData):
+    return np.array([ np.transpose([mvnxData['Right Ankle ' + plane] for plane in joint_planes]),
+                                np.transpose([mvnxData['Left Ankle ' + plane] for plane in joint_planes]) ])
 
-    ankle_angles = np.array([ np.transpose([mvnxData['Right Ankle ' + plane] for plane in joint_planes]),
-                            np.transpose([mvnxData['Left Ankle ' + plane] for plane in joint_planes]) ])
-    hip_angles = np.array([ np.transpose([mvnxData['Right Hip ' + plane] for plane in joint_planes]),
-                            np.transpose([mvnxData['Left Hip ' + plane] for plane in joint_planes]) ])
+def get_gyro_data(mvnxData, sensors):
+    return np.array([np.transpose([mvnxData[signal] for signal in mvnxData.columns if (sensor + '_gyro') in signal]) for sensor in sensors])
 
-    # orientation for turns already corrected in mvnx-to-excel conversion. Best practice is if you care about accelerometer or gyroscope
-    # data from the MVN system, trials are trimmed to contain single passes only with heading reset, for consistent orientation
-    gyro_data = np.array([np.transpose([mvnxData[signal] for signal in mvnxData.columns if (sensor + '_gyro') in signal]) for sensor in sensors])
-    acc_data = np.array([np.transpose([mvnxData[signal] for signal in mvnxData.columns if (sensor + '_acc') in signal]) for sensor in sensors])
-    
-    # get position information from all segments and pelvis to map 
-    # walkway and eliminate any transition/turning data present in samples  
-    pelvis_position = np.transpose([mvnxData['Pelvis Position ' + plane] for plane in axis_planes])
-    # print(pelvis_position.shape)
-    foot_position = np.array([ np.transpose([mvnxData['Right FootPosition ' + plane] for plane in axis_planes]),
-                            np.transpose([mvnxData['Left FootPosition ' + plane] for plane in axis_planes]) ])
+def get_acc_data(mvnxData, sensors):
+    return np.array([np.transpose([mvnxData[signal] for signal in mvnxData.columns if (sensor + '_acc') in signal]) for sensor in sensors])
 
-    # takes into account X and Y to deal with orientation drift over time. If single pass, can typically set close to 1.0 to eliminate start/stop
-    range_to_keep = 0.80
-
-    startInd = np.argmin(pelvis_position[:,0])
-    endInd = np.argmax(pelvis_position[:,0])
-
-    startPos = pelvis_position[startInd, 0:2]
-    endPos = pelvis_position[endInd, 0:2]
-
-    def centroid_poly(X, Y):
-        """https://en.wikipedia.org/wiki/Centroid#Of_a_polygon"""
-        N = len(X)
-        # minimal sanity check
-        if not (N == len(Y)): raise ValueError('X and Y must be same length.')
-        elif N < 3: raise ValueError('At least 3 vertices must be passed.')
-        sum_A, sum_Cx, sum_Cy = 0, 0, 0
-        last_iteration = N-1
-        # from 0 to N-1
-        for i in range(N):
-            if i != last_iteration:
-                shoelace = X[i]*Y[i+1] - X[i+1]*Y[i]
-                sum_A  += shoelace
-                sum_Cx += (X[i] + X[i+1]) * shoelace
-                sum_Cy += (Y[i] + Y[i+1]) * shoelace
-            else:
-                # N-1 case (last iteration): substitute i+1 -> 0
-                shoelace = X[i]*Y[0] - X[0]*Y[i]
-                sum_A  += shoelace
-                sum_Cx += (X[i] + X[0]) * shoelace
-                sum_Cy += (Y[i] + Y[0]) * shoelace
-        A  = 0.5 * sum_A
-        factor = 1 / (6*A)
-        Cx = factor * sum_Cx
-        Cy = factor * sum_Cy
-        # returning abs of A is the only difference to
-        # the algo from above link
-        return Cx, Cy, abs(A)
-    
-
-    # IF USING SINGLE PASSES (MVN TRIALS TRIMMED SO NO TURNS), USE FIRST CENTER DETERMINATION
-    # centroid_poly is useful for calculating the center of a long trial. However, if you've trimmed
-    # so that all trials are a single pass, use simpler center calculation to avoid case where starting
-    # or stopping at beginning/end of trial skews centroid of data
-    center = [0,0]
-    # center = [(endPos[0] + startPos[0]) / 2, (endPos[1] + startPos[1]) / 2]
-    center[0], center[1], _ = centroid_poly(pelvis_position[:,0], pelvis_position[:,1])
-    
-    dist = np.sqrt((endPos[0] - center[0])**2 + (endPos[1] - center[1])**2)
-
-    # returns indices when person is not within x% of either end of a walk-way (assuming approximately straight walking in x-axis)
-    # position_not_ends = np.array([i for i in range(len(position_info)) 
-    #                             if (position_info[i]['pelvis'][1] > posRange[0] 
-    #                             and position_info[i]['pelvis'][1]  < posRange[1])])
-    position_not_ends = np.array([i for i in range(len(pelvis_position)) 
-                                if (np.sqrt((pelvis_position[i,0]-center[0])**2 + 
-                                    (pelvis_position[i,1]-center[1])**2) < (range_to_keep * dist))])
-
-    '''
-    Visualization of the walkway, to verify excluding strides you want. Plots a top-down view of participant's trajectory as 
-    determined by pelvis (x,y) position. Plots center of circle 
-
-    fig = plt.figure()
-    ax = fig.add_subplot(1,1,1)
-    plt.plot(pelvis_position[:,0], pelvis_position[:,1])
-    c = plt.Circle(tuple(center), range_to_keep * dist, color='r')
-    ax.add_patch(c)
-    plt.scatter([center[0]], [center[1]], color='k', marker = 'o')
-    fig.set_size_inches(7, 7)
-
-    plt.xlim([-5, 25])
-    plt.ylim([-15, 15])
-    plt.show()
-    '''
-    
-
-    # retrieve foot contact data, used to identify valid heel strikes and corresponding toe-offs
-    seq = [0., 1.]
-    heel_contacts = np.array([mvnxData[side + ' HeelContacts'] for side in sides])
-    toe_contacts = np.array([mvnxData[side + ' ToeContacts'] for side in sides])
-
-    # toe_contacts = np.transpose([[x['RightFoot_Toe'][0], x['LeftFoot_Toe'][0]] for x in foot_contacts])
-
-    r_foot_contact = np.array(mvnxData['Right Foot Contacts'])
-    l_foot_contact = np.array(mvnxData['Left Foot Contacts'])
-
-    # identify_gait_cycles returns 3xN matrix, 1st row = heel strike beginning of gait cycle, 2nd row = toe off
-    # 3rd row = consecutive heel strike to end gait cycle
-    gait_events = [identify_gait_events(position_not_ends, heel_contacts[0], toe_contacts[0], seq),
-                    identify_gait_events(position_not_ends, heel_contacts[1], toe_contacts[1], seq)]
-    
-    '''
-    Matches and right and left gait cycles, so same number of left and right gait cycles (for gait parameter calculation)
-    Input: list of right and left gait events
-    Return: N x 6 array, where each row is a matched r/l gait cycle
-
-    '''
-    def find_valid_r_l_strides(gait_events):
-        
-        r_gait_events = gait_events[0]
-        l_gait_events = gait_events[1]
-        
-        stride_events = []
-        for i in range(r_gait_events.shape[1]):
-            rhs1 = r_gait_events[0][i]
-            rto = r_gait_events[1][i]
-            rhs2 = r_gait_events[2][i]
- 
-            l_events = [lhs for lhs in l_gait_events[0,:] if rhs1 < lhs < rhs2]
-
-            if ((len(l_events) == 1)):
-                lhs1 = l_events[0]
-                lcycle = np.where(l_gait_events[0,:] == lhs1)[0][0]
-                lto = l_gait_events[1][lcycle]
-                lhs2 = l_gait_events[2][lcycle]
-
-                stride_events.append([rhs1, rto, rhs2, lhs1, lto, lhs2])
-
-        stride_events = np.array(stride_events)
-        return stride_events
-    
-    # finds matched right and left strides which are within the tolerance distance (range_to_keep)
-    matched_r_l_strides = find_valid_r_l_strides(gait_events)
-    gait_events = [matched_r_l_strides[:,:3].T,
-                  matched_r_l_strides[:,3:].T]
-    
-
-
-    # CODE FOR ALIGNING XSENS MVN AND XSENS DOT DATA
-
+'''
+If there is corresponding Xsens DOT data, this function splits the Xsens DOT data into gait cycles, using gait events identified
+by the MVN system data
+Input:  mvn_gyro_data: Gyroscope data from the MVN system
+        xsens_dot_data: Xsens DOT data to be partitioned, expects a dictionary with structure {sensor-locations: N x 6 numpy array}
+                                                                                                N = number of packets
+                        Each key corresponds to sensor location ('ur', 'p', etc.)
+        gait_events: gait events from MVN contact information. 2 elements of list --> right and left gait events per gait cycle
+Output:
+        partitioned_dot_data: 
+'''
+def time_align_mvn_and_dot(mvn_gyro_data, xsens_dot_data, gait_events, is_dot_data_time_synced=True,):
     # main gyroscope axes for 5 signal locations (based on CZ sensor placement/orientation), used for time-aligning with xsens mvn
     dot_main_axis = {'LowerL':-1, 'LowerR':-1, 'Pelvis':-2, 'UpperL':-1, 'UpperR':-1}
     # because of orientation, need to flip Pelvis and UpperR signals for time-aligning
@@ -581,7 +461,6 @@ def process_trial_data(trial_val, filename_trial, xsens_dot_data, is_dot_data_ti
     dot_partitioned_signals = {}
     sensor_locs = {'ll':'LowerL', 'lr':'LowerR', 'p':'Pelvis', 'ul':'UpperL', 'ur':'UpperR'}
     b20, a20 = scipy.signal.butter(N=2, Wn = 0.8, btype = 'lowpass')
-
     
     # once get an initial time-alignment based off gait events, finetune by minimizing the RMSE
     # between DOT and MVN data. This fixes issues where slight differences in filtering or sensor placement
@@ -644,34 +523,219 @@ def process_trial_data(trial_val, filename_trial, xsens_dot_data, is_dot_data_ti
             mvn_gait_side = 1
             
         time_aligned_dot_gait_events = gait_events[mvn_gait_side].T + time_align
-        dot_partitioned_signals[sensor_locs[sensor_location]] = [xsens_dot_data[sensor_location][cycle[0]:cycle[2],:] for cycle in time_aligned_dot_gait_events]
+        partitioned_dot_data[sensor_locs[sensor_location]] = [xsens_dot_data[sensor_location][cycle[0]:cycle[2],:] for cycle in time_aligned_dot_gait_events]
+
+        return partitioned_dot_data
 
 
-    # partition the MVN strides into respective gait cycles, store in python dict
-    lower_body_strides = {}
-    lower_body_strides['pelvis_orient'] = [divide_into_strides(gait_events, pelvis_euler_orientation, side='r', signal_num=0)]
-    lower_body_strides['hip_angle'] = [divide_into_strides(gait_events, hip_angles, side='r', signal_num=0), divide_into_strides(gait_events, hip_angles, side='l', signal_num=1)]
-    lower_body_strides['knee_angle'] = [divide_into_strides(gait_events, knee_angles, side='r', signal_num=0), divide_into_strides(gait_events, knee_angles, side='l', signal_num=1)]
-    lower_body_strides['ankle_angle'] = [divide_into_strides(gait_events, ankle_angles, side='r', signal_num=0), divide_into_strides(gait_events, ankle_angles, side='l', signal_num=1)]
-    lower_body_strides['sternum_orient'] = [divide_into_strides(gait_events, sternum_euler_orientation, side='r', signal_num=0)]
-    lower_body_strides['gyro_data'] = [divide_into_strides(gait_events, gyro_data, side='l',signal_num=i) if 'left' in sensors[i] 
-                                           else divide_into_strides(gait_events, gyro_data, side='r', signal_num=i) for i in range(len(sensors))]
-    lower_body_strides['acc_data'] = [divide_into_strides(gait_events, acc_data, side='l',signal_num=i) if 'left' in sensors[i] 
-                                           else divide_into_strides(gait_events, acc_data, side='r', signal_num=i) for i in range(len(sensors))]
-    
-    # specific participant occasionally knocked left thigh-sensor mid-trial. This filters out those strides
-    if('/MI' in filename_trial):
-        lower_body_strides['gyro_data'][5] = [stride for stride in lower_body_strides['gyro_data'][5] if np.max(stride[:,1]) - np.min(stride[:,1]) < 4.5]
-    
-    gait_params = {}
-    # print('Calculating spatiotemporal parameters...')
-    gait_params['spatio_temp'] = calc_spatio_temp_params(gait_events, pelvis_position, foot_position, frame_rate, knee_angles, hip_angles)
-    # print(spatio_temp_params[0])
+'''
+Gait parser object. Main function is to store info pertaining to Xsens file, as well as MVN gait information
 
-    # print('Calculating kinematic parameters...')
-    gait_params['kinematics'] = calc_kinematic_params(gait_events, pelvis_euler_orientation, hip_angles, knee_angles, ankle_angles, sternum_euler_orientation)
+init parameters:
+    mvn_csv_filename: filename of .csv file containing desired mvnx data
+'''
+class XsensGaitDataParser:
 
-    # print('Calculating signal parameters...')
-    gait_params['signal'] = calc_signal_params(lower_body_strides)
+    def __init__(self):
+        self.mvn_filename = None
+        # following variables initialized in process_mvn_trial_data
+        self.gait_events = []             # list with right and left gait events, organized into matched gait cycles
+        self.gait_params = {}             # dict. containing spatiotemporal, kinematics, and signal gait parameters
+        self.mvnxData = None
 
-    return lower_body_strides, gait_params, dot_partitioned_signals
+    def clear_gait_data():
+        self.gait_events = []
+        self.gait_params = {}
+
+    def process_mvn_trial_data(mvn_csv_filename):
+
+        # default sample rate for MVN = 100Hz
+        self.mvn_filename = mvn_csv_filename
+
+        frame_rate = 100
+
+        # Read .csv file which has all the MVN data. MVNX files must be converted to .csv using the excel_from_mvnx.py script
+        mvnxData = pd.read_csv(mvn_csv_filename)
+        # if not control_data:
+        #     print('Parsed excel file \'%s\'...' % (mvn_csv_filename))
+        sensors = get_default_sensor_index()        # get sensors from MVN data
+
+        self.clear_gait_data()
+
+        pelvis_euler_orientation = get_pelvis_euler_orientation(mvnxData)
+        sternum_euler_orientation = get_sternum_euler_orientation(mvnxData)
+        hip_angles = get_hip_angles(mvnxData)
+        knee_angles = get_knee_angles(mvnxData)
+        ankle_angles = get_ankle_angles(mvnxData)
+
+        # plt.figure()    
+        # plt.plot(pelvis_euler_orientation[0,:,2], color = 'black')
+        # plt.show()
+        # exit()
+
+        # orientation for turns already corrected in mvnx-to-excel conversion. Best practice is if you care about accelerometer or gyroscope
+        # data from the MVN system, trials are trimmed to contain single passes only with heading reset, for consistent orientation
+        gyro_data = get_gyro_data(mvnxData, sensors)
+        acc_data = get_acc_data(mvnxData, sensors)
+        
+        # get position information from all segments and pelvis to map 
+        # walkway and eliminate any transition/turning data present in samples  
+        pelvis_position = get_pelvis_position(mvnxData)
+        # print(pelvis_position.shape)
+        foot_position = np.array([ np.transpose([mvnxData['Right FootPosition ' + plane] for plane in axis_planes]),
+                                np.transpose([mvnxData['Left FootPosition ' + plane] for plane in axis_planes]) ])
+
+        # takes into account X and Y to deal with orientation drift over time. If single pass, can typically set close to 1.0 to eliminate start/stop
+        range_to_keep = 0.80
+
+        startInd = np.argmin(pelvis_position[:,0])
+        endInd = np.argmax(pelvis_position[:,0])
+
+        startPos = pelvis_position[startInd, 0:2]
+        endPos = pelvis_position[endInd, 0:2]
+
+        def centroid_poly(X, Y):
+            """https://en.wikipedia.org/wiki/Centroid#Of_a_polygon"""
+            N = len(X)
+            # minimal sanity check
+            if not (N == len(Y)): raise ValueError('X and Y must be same length.')
+            elif N < 3: raise ValueError('At least 3 vertices must be passed.')
+            sum_A, sum_Cx, sum_Cy = 0, 0, 0
+            last_iteration = N-1
+            # from 0 to N-1
+            for i in range(N):
+                if i != last_iteration:
+                    shoelace = X[i]*Y[i+1] - X[i+1]*Y[i]
+                    sum_A  += shoelace
+                    sum_Cx += (X[i] + X[i+1]) * shoelace
+                    sum_Cy += (Y[i] + Y[i+1]) * shoelace
+                else:
+                    # N-1 case (last iteration): substitute i+1 -> 0
+                    shoelace = X[i]*Y[0] - X[0]*Y[i]
+                    sum_A  += shoelace
+                    sum_Cx += (X[i] + X[0]) * shoelace
+                    sum_Cy += (Y[i] + Y[0]) * shoelace
+            A  = 0.5 * sum_A
+            factor = 1 / (6*A)
+            Cx = factor * sum_Cx
+            Cy = factor * sum_Cy
+            # returning abs of A is the only difference to
+            # the algo from above link
+            return Cx, Cy, abs(A)
+        
+
+        # IF USING SINGLE PASSES (MVN TRIALS TRIMMED SO NO TURNS), USE FIRST CENTER DETERMINATION
+        # centroid_poly is useful for calculating the center of a long trial. However, if you've trimmed
+        # so that all trials are a single pass, use simpler center calculation to avoid case where starting
+        # or stopping at beginning/end of trial skews centroid of data
+        center = [0,0]
+        # center = [(endPos[0] + startPos[0]) / 2, (endPos[1] + startPos[1]) / 2]
+        center[0], center[1], _ = centroid_poly(pelvis_position[:,0], pelvis_position[:,1])
+        
+        dist = np.sqrt((endPos[0] - center[0])**2 + (endPos[1] - center[1])**2)
+
+        # returns indices when person is not within x% of either end of a walk-way (assuming approximately straight walking in x-axis)
+        # position_not_ends = np.array([i for i in range(len(position_info)) 
+        #                             if (position_info[i]['pelvis'][1] > posRange[0] 
+        #                             and position_info[i]['pelvis'][1]  < posRange[1])])
+        position_not_ends = np.array([i for i in range(len(pelvis_position)) 
+                                    if (np.sqrt((pelvis_position[i,0]-center[0])**2 + 
+                                        (pelvis_position[i,1]-center[1])**2) < (range_to_keep * dist))])
+
+        '''
+        Visualization of the walkway, to verify excluding strides you want. Plots a top-down view of participant's trajectory as 
+        determined by pelvis (x,y) position. Plots center of circle 
+
+        fig = plt.figure()
+        ax = fig.add_subplot(1,1,1)
+        plt.plot(pelvis_position[:,0], pelvis_position[:,1])
+        c = plt.Circle(tuple(center), range_to_keep * dist, color='r')
+        ax.add_patch(c)
+        plt.scatter([center[0]], [center[1]], color='k', marker = 'o')
+        fig.set_size_inches(7, 7)
+
+        plt.xlim([-5, 25])
+        plt.ylim([-15, 15])
+        plt.show()
+        '''
+        
+
+        # retrieve foot contact data, used to identify valid heel strikes and corresponding toe-offs
+        seq = [0., 1.]
+        heel_contacts = np.array([mvnxData[side + ' HeelContacts'] for side in sides])
+        toe_contacts = np.array([mvnxData[side + ' ToeContacts'] for side in sides])
+
+        # toe_contacts = np.transpose([[x['RightFoot_Toe'][0], x['LeftFoot_Toe'][0]] for x in foot_contacts])
+
+        r_foot_contact = np.array(mvnxData['Right Foot Contacts'])
+        l_foot_contact = np.array(mvnxData['Left Foot Contacts'])
+
+        # identify_gait_cycles returns 3xN matrix, 1st row = heel strike beginning of gait cycle, 2nd row = toe off
+        # 3rd row = consecutive heel strike to end gait cycle
+        gait_events = [identify_gait_events(position_not_ends, heel_contacts[0], toe_contacts[0], seq),
+                        identify_gait_events(position_not_ends, heel_contacts[1], toe_contacts[1], seq)]
+        
+        '''
+        Matches and right and left gait cycles, so same number of left and right gait cycles (for gait parameter calculation)
+        Input: list of right and left gait events
+        Return: N x 6 array, where each row is a matched r/l gait cycle
+
+        '''
+        def find_valid_r_l_strides(gait_events):
+            
+            r_gait_events = gait_events[0]
+            l_gait_events = gait_events[1]
+            
+            stride_events = []
+            for i in range(r_gait_events.shape[1]):
+                rhs1 = r_gait_events[0][i]
+                rto = r_gait_events[1][i]
+                rhs2 = r_gait_events[2][i]
+     
+                l_events = [lhs for lhs in l_gait_events[0,:] if rhs1 < lhs < rhs2]
+
+                if ((len(l_events) == 1)):
+                    lhs1 = l_events[0]
+                    lcycle = np.where(l_gait_events[0,:] == lhs1)[0][0]
+                    lto = l_gait_events[1][lcycle]
+                    lhs2 = l_gait_events[2][lcycle]
+
+                    stride_events.append([rhs1, rto, rhs2, lhs1, lto, lhs2])
+
+            stride_events = np.array(stride_events)
+            return stride_events
+        
+        # finds matched right and left strides which are within the tolerance distance (range_to_keep)
+        matched_r_l_strides = find_valid_r_l_strides(gait_events)
+        gait_events = [matched_r_l_strides[:,:3].T,
+                      matched_r_l_strides[:,3:].T]
+        
+
+        # partition the MVN strides into respective gait cycles, store in python dict
+        partitioned_mvn_data = {}
+        partitioned_mvn_data['pelvis_orient'] = [divide_into_strides(gait_events, pelvis_euler_orientation, side='r', signal_num=0)]
+        partitioned_mvn_data['hip_angle'] = [divide_into_strides(gait_events, hip_angles, side='r', signal_num=0), divide_into_strides(gait_events, hip_angles, side='l', signal_num=1)]
+        partitioned_mvn_data['knee_angle'] = [divide_into_strides(gait_events, knee_angles, side='r', signal_num=0), divide_into_strides(gait_events, knee_angles, side='l', signal_num=1)]
+        partitioned_mvn_data['ankle_angle'] = [divide_into_strides(gait_events, ankle_angles, side='r', signal_num=0), divide_into_strides(gait_events, ankle_angles, side='l', signal_num=1)]
+        partitioned_mvn_data['sternum_orient'] = [divide_into_strides(gait_events, sternum_euler_orientation, side='r', signal_num=0)]
+        partitioned_mvn_data['gyro_data'] = [divide_into_strides(gait_events, gyro_data, side='l',signal_num=i) if 'left' in sensors[i] 
+                                               else divide_into_strides(gait_events, gyro_data, side='r', signal_num=i) for i in range(len(sensors))]
+        partitioned_mvn_data['acc_data'] = [divide_into_strides(gait_events, acc_data, side='l',signal_num=i) if 'left' in sensors[i] 
+                                               else divide_into_strides(gait_events, acc_data, side='r', signal_num=i) for i in range(len(sensors))]
+        
+        # specific participant occasionally knocked left thigh-sensor mid-trial. This filters out those strides
+        if('/MI' in mvn_csv_filename):
+            partitioned_mvn_data['gyro_data'][5] = [stride for stride in partitioned_mvn_data['gyro_data'][5] if np.max(stride[:,1]) - np.min(stride[:,1]) < 4.5]
+        
+        gait_params = {}
+        # print('Calculating spatiotemporal parameters...')
+        gait_params['spatio_temp'] = calc_spatio_temp_params(gait_events, pelvis_position, foot_position, frame_rate, knee_angles, hip_angles)
+        # print(spatio_temp_params[0])
+
+        # print('Calculating kinematic parameters...')
+        gait_params['kinematics'] = calc_kinematic_params(gait_events, pelvis_euler_orientation, hip_angles, knee_angles, ankle_angles, sternum_euler_orientation)
+
+        # print('Calculating signal parameters...')
+        gait_params['signal'] = calc_signal_params(partitioned_mvn_data)
+
+        return partitioned_mvn_data, gait_params, gait_events

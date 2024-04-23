@@ -351,8 +351,9 @@ for participant_of_interest in list(reversed(list(sym_range_parts.keys()))):
                 gait_params: gait parameters calculated from the MVN data
                 partitioned_signals: Xsens DOT data for the trial, partitioned into gait cycles using MVN foot contact, following time-alignment with MVN data
             '''
-            lower_body_strides, gait_params, partitioned_signals = excel_reader.process_trial_data(0, xsens_path_file, dot_sensor_data)
-            partitioned_signals_dot.append(partitioned_signals)
+            partitioned_mvn_data, gait_params, gait_events = excel_reader.process_mvn_trial_data(0, xsens_path_file, dot_sensor_data)
+
+            partitioned_signals_dot.append(excel_reader.time_align_mvn_and_dot(dot_sensor_data, partitioned_mvn_data[]))
 
             # reorganizes so that mvn data from all trials (e.g. partitioned mvn gait cycles, gait parameters) stored in single arrays.
             # trial type is set static for here, since all trials are grouped together. Can be set to variable parameter or read from filenames (if named under proper convention)
