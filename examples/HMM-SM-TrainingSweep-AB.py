@@ -274,6 +274,8 @@ logging.info(f'Strides to concat: {strides_to_concat}   # HMM States: {num_state
 # symmetry for those gait cycles. Split gait cycles and STSR into levels determined by STSR ranges, concatenate gait cycles, and train HMMs on the 
 # gait cycles data within each symmetry level. Compute mean HMM-similarity measure (HMM-SM) between symmetry levels and within symmetry level
 
+XsensGaitParser =  excel_reader.XsensGaitDataParser()
+
 # for participant_of_interest in sym_range_parts:
 for participant_of_interest in list(reversed(list(sym_range_parts.keys()))):
     logging.info(f'Training participant {str(participant_of_interest)}...')
@@ -351,7 +353,10 @@ for participant_of_interest in list(reversed(list(sym_range_parts.keys()))):
                 gait_params: gait parameters calculated from the MVN data
                 partitioned_signals: Xsens DOT data for the trial, partitioned into gait cycles using MVN foot contact, following time-alignment with MVN data
             '''
-            partitioned_mvn_data, gait_params, gait_events = excel_reader.process_mvn_trial_data(0, xsens_path_file, dot_sensor_data)
+
+
+            XsensGaitParser.process_mvn_trial_data(xsens_path_file)
+            partitioned_mvn_data = XsensGaitParser.get_partitioned_mvn_data()
 
             partitioned_signals_dot.append(excel_reader.time_align_mvn_and_dot(dot_sensor_data, partitioned_mvn_data[]))
 
