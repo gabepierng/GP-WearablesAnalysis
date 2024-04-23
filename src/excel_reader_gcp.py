@@ -143,7 +143,7 @@ class XsensGaitDataParser:
         self.partitioned_mvn_data = {}
         self.partitioned_dot_data = {}
 
-    def clear_gait_data():
+    def clear_gait_data(self):
         self.gait_events = []
         self.gait_params = {}
         self.mvnxData = None
@@ -545,7 +545,8 @@ class XsensGaitDataParser:
         if ((self.mvnxData is None) or (not self.gait_events)):
             raise ValueError('Need to read MVN data first, call process_mvn_trial_data()')
 
-        mvn_gyro_data = self.get_gyro_data()
+        sensors = get_default_sensor_index()
+        mvn_gyro_data = self.get_gyro_data(sensors)
         # main gyroscope axes for 5 signal locations (based on CZ sensor placement/orientation), used for time-aligning with xsens mvn
         dot_main_axis = {'LowerL':-1, 'LowerR':-1, 'Pelvis':-2, 'UpperL':-1, 'UpperR':-1}
         # because of orientation, need to flip Pelvis and UpperR signals for time-aligning
@@ -621,7 +622,7 @@ class XsensGaitDataParser:
         return partitioned_dot_data
 
     def process_mvn_trial_data(self, mvn_csv_filename):
-
+        self.clear_gait_data()
         # default sample rate for MVN = 100Hz
         self.mvn_filename = mvn_csv_filename
 
@@ -632,8 +633,6 @@ class XsensGaitDataParser:
         # if not control_data:
         #     print('Parsed excel file \'%s\'...' % (mvn_csv_filename))
         sensors = get_default_sensor_index()        # get sensors from MVN data
-
-        self.clear_gait_data()
 
         pelvis_euler_orientation = self.get_pelvis_euler_orientation()
         sternum_euler_orientation = self.get_sternum_euler_orientation()
