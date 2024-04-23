@@ -357,8 +357,9 @@ for participant_of_interest in list(reversed(list(sym_range_parts.keys()))):
 
             XsensGaitParser.process_mvn_trial_data(xsens_path_file)
             partitioned_mvn_data = XsensGaitParser.get_partitioned_mvn_data()
+            gait_params = XsensGaitParser.get_gait_param_info()
 
-            partitioned_signals_dot.append(excel_reader.time_align_mvn_and_dot(dot_sensor_data, partitioned_mvn_data[]))
+            partitioned_signals_dot.append(XsensGaitParser.time_align_mvn_and_dot(dot_sensor_data))
 
             # reorganizes so that mvn data from all trials (e.g. partitioned mvn gait cycles, gait parameters) stored in single arrays.
             # trial type is set static for here, since all trials are grouped together. Can be set to variable parameter or read from filenames (if named under proper convention)
