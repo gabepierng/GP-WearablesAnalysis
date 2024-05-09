@@ -571,7 +571,7 @@ class XsensGaitDataParser:
             new_align = initial_time_align
             for i in range(-19, 20):
                 xsens_compare = xsens_time_signal[xsens_start + i : xsens_end + i]
-                rmse = metrics.mean_squared_error(xsens_compare, dot_compare, squared=False)
+                rmse = metrics.root_mean_squared_error(xsens_compare, dot_compare)
                 if (rmse < min_rmse):
                     # print('New offset: %d       rmse: %.4f' % (i, rmse))
                     min_rmse = rmse

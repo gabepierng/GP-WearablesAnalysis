@@ -1,4 +1,3 @@
-import cloudstorage as gcs
 from google.cloud import storage
 import pandas as pd
 
@@ -11,9 +10,11 @@ import json
 import scipy
 import seaborn as sns
 import copy
+import sys
 
 from scipy import signal
 import scipy.interpolate as interp
+sys.path.append(os.path.join(sys.path[0], '..', 'src'))
 import excel_reader_gcp as excel_reader
 from hmmlearn import hmm
 import logging
@@ -23,7 +24,11 @@ use_manual_filenames = False
 
 # create log file to store model experiment results
 run_time = datetime.datetime.now().strftime("%d-%m-%y_%H-%M")
-logging.basicConfig(filename=f'./log_files/{run_time}_HMM_Sweep.log',
+
+if not(os.path.isdir('../log_files')):
+    os.mkdir('../log_files')
+
+logging.basicConfig(filename=f'../log_files/{run_time}_HMM_Sweep.log',
                     format = "%(asctime)s %(levelname)s %(message)s",
                     level = logging.INFO)
 
@@ -301,7 +306,7 @@ for participant_of_interest in list(reversed(list(sym_range_parts.keys()))):
 
 
             # search for .json file with information of each trial such as sensor placement
-            for blob in storage_client.list_blobs('gaitbfb_propellab', prefix=os.path.join(prefix_from_bucket, 'App_Data/')):
+            for blob in storage_client.list_blobs(bucket_or_name='gaitbfb_propellab', prefix=os.path.join(prefix_from_bucket, 'App_Data/').replace("\\", "/")):
                 file = blob.name
                 if( ((str(trial_num) + '.json') in file) and (dot_trial_type in file) and not ('Audio' in file) and not ('._' in file)):
                     bfb_json_file = file
@@ -314,14 +319,14 @@ for participant_of_interest in list(reversed(list(sym_range_parts.keys()))):
 
             # gets unique sensor locations from logged data folder, i.e., ul, ur, p, etc.
             dot_sensor_data = list(set([f.name.strip('.csv').split('_')[-1] for f in storage_client.list_blobs('gaitbfb_propellab', 
-                                                                                        prefix=os.path.join(prefix_from_bucket, 'App_Data_Logged/Renamed/'))
+                                                                                        prefix=os.path.join(prefix_from_bucket, 'App_Data_Logged/Renamed/').replace("\\", "/"))
                                                                                        if not f.name[-1] == '/']))
             dot_sensor_data = dict.fromkeys(dot_sensor_data)
             temp_dot = {}
 
             # get filenames for each DOT sensor location corresponding to this trial
             for location in dot_sensor_data.keys():
-                for blob in storage_client.list_blobs('gaitbfb_propellab', prefix=os.path.join(prefix_from_bucket, 'App_Data_Logged/Renamed/')):
+                for blob in storage_client.list_blobs('gaitbfb_propellab', prefix=os.path.join(prefix_from_bucket, 'App_Data_Logged/Renamed/').replace("\\", "/")):
                     filename = blob.name 
                     if( ('_' + str(trial_num) + '_' + location) in filename):
                         temp_dot[filename] = None
@@ -331,18 +336,18 @@ for participant_of_interest in list(reversed(list(sym_range_parts.keys()))):
 
             for location, filename in zip(dot_sensor_data.keys(), temp_dot.keys()):
                 # link each DOT file to pandas dataframe with DOT accelerometer and gyroscope data
-                temp_dot[filename] = pd.read_csv(os.path.join(bucket_dir, filename))
+                temp_dot[filename] = pd.read_csv(os.path.join(bucket_dir, filename).replace("\\", "/"))
 
                 # due to data pipeline, some csv files have "sep=," at beginning which needs to be removed/skipped for pd.read_csv to read columns correctly
                 # this checks to see whether this is the case, and need to reread the csv file.
                 if(len(temp_dot[filename].columns) == 2 ):
-                    temp_dot[filename] = pd.read_csv(os.path.join(bucket_dir, filename), skiprows=1)
+                    temp_dot[filename] = pd.read_csv(os.path.join(bucket_dir, filename).replace("\\", "/"), skiprows=1)
 
                 # dot_sensor_data = list of xsens DOT data from each location, with this data interpolated to 100 Hz to match the MVN data (for time aligning)
                 dot_sensor_data[location] = np.array([convert_dot_freq(temp_dot[filename]['PacketCounter'], temp_dot[filename][sig]) for sig in signals_of_interest]).T
 
             # load Xsens MVN full data
-            xsens_path_file = os.path.join(bucket_dir, prefix_from_bucket, 'Excel_Data/', xsens_file)
+            xsens_path_file = os.path.join(bucket_dir, prefix_from_bucket, 'Excel_Data/', xsens_file).replace("\\", "/")
             # lower_body_strides, gait_params, partitioned_dot_signal = excel_reader.process_trial_data(0, xsens_path_file, xsens_dot[0][-1], stride_events)
 
             '''
@@ -370,7 +375,7 @@ for participant_of_interest in list(reversed(list(sym_range_parts.keys()))):
                 for body_part in part_strides[trial_type]:
                     for i, side in enumerate(part_strides[trial_type][body_part]):
                         # for each part (pelvis, l_hip, r_knee, etc.), append strides to appropriate list
-                        part_strides[trial_type][body_part][i] = part_strides[trial_type][body_part][i] + lower_body_strides[body_part][i]
+                        part_strides[trial_type][body_part][i] = part_strides[trial_type][body_part][i] + partitioned_mvn_data[body_part][i]
 
                 part_gait_params[trial_type].append(gait_params['spatio_temp'])
                 # print(part_gait_params['AB'])
@@ -380,7 +385,7 @@ for participant_of_interest in list(reversed(list(sym_range_parts.keys()))):
                         part_kinematic_params[trial_type][joint][i] = np.append(part_kinematic_params[trial_type][joint][i], gait_params['kinematics'][joint][i], axis=0)
 
             else:
-                part_strides[trial_type] = lower_body_strides
+                part_strides[trial_type] = partitioned_mvn_data
                 part_gait_params[trial_type] = [gait_params['spatio_temp']]
                 part_kinematic_params[trial_type] = gait_params['kinematics']
 
