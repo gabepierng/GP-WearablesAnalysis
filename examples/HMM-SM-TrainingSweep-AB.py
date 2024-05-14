@@ -15,13 +15,35 @@ import sys
 from scipy import signal
 import scipy.interpolate as interp
 sys.path.append(os.path.join(sys.path[0], '..', 'src'))
+print(sys.path[0])
 import excel_reader_gcp as excel_reader
 from hmmlearn import hmm
 import logging
 import datetime
+import csv
 
 use_manual_filenames = False
 
+gait_param = 'SMM'
+Algorithm = 'HMM'
+script_dir = os.path.dirname(__file__)
+current_datetime = datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
+csv_filename = f"{Algorithm}_{gait_param}_log_{current_datetime}.csv" #Builds a log file based on the current time to keep track of runs
+csv_path = os.path.join(script_dir, csv_filename)
+print(script_dir)
+
+def initialize_csv(csv_path):
+    with open(csv_path, mode='w', newline='') as file:
+        writer = csv.writer(file)
+        writer.writerow(['States', 'SensorConfig', 'GaitParamPartition', 'Algorithm', 'Participant Number','Symm_Range','Similarity'])
+
+# Function to add a row of data to the CSV file
+def add_row_to_csv(csv_path, num_states, sensor_config, gait_param, algorithm, participant_num,symm_range,similarity):
+    with open(csv_path, mode='a', newline='') as file:
+        writer = csv.writer(file)
+        writer.writerow([num_states, sensor_config, gait_param, algorithm, participant_num,symm_range,similarity])
+
+initialize_csv(csv_path)
 # create log file to store model experiment results
 run_time = datetime.datetime.now().strftime("%d-%m-%y_%H-%M")
 
@@ -458,8 +480,12 @@ for participant_of_interest in list(reversed(list(sym_range_parts.keys()))):
     for sensor_array_to_test in sensor_combos:
         if(len(sensor_array_to_test) == 1):
             logging.info(f'Sensors used: {sensor_array_to_test[0]}...')
+            config_sensor = f'{sensor_array_to_test[0]}'
+            #add_row_to_csv(csv_path, num_states, config_sensor, gait_param, algorithm, participant_of_interest)
         else:
             logging.info(f'Sensors used: {sensor_array_to_test[0]} and {sensor_array_to_test[1]}...')
+            config_sensor = f'{sensor_array_to_test[0]} and {sensor_array_to_test[1]}'
+            #add_row_to_csv(csv_path, num_states, config_sensor, gait_param, algorithm, participant_of_interest)
         partitioned_strides = {}
 
         # if testing sensor combo, concatenate sensors by last axis
@@ -496,6 +522,31 @@ for participant_of_interest in list(reversed(list(sym_range_parts.keys()))):
         hmm_models = {}
         num_models_train = 10
 
+#DUMMY FOR LOGGING RESULTS (don't want to train anything yet) -------------------------------------------------------
+        for i in range(len(trial_types)):
+            # print()
+            for j in range(len(trial_types)):
+                sum_dif = 0
+                count = 0
+                for k in range(num_models_train):
+                    if(i == j):
+                        indices = [a for a in range(num_models_train) if (not a == k)]
+                    else:
+                        indices = np.arange(num_models_train)
+                    for m in indices:
+                        x = 3 #DUMMY
+                        sum_dif = sum_dif + 0.5 #DUMMY
+                        count = count+1
+
+                # log average HMM-SM similarity
+                mean_dif = sum_dif / count
+                logging.info(f'{trial_types[i]} - {trial_types[j]}   :   {str(np.round(mean_dif, 5))}')
+                symmetry_range = f'{trial_types[i]} - {trial_types[j]}'
+                similarity = np.round(mean_dif, 5)
+                add_row_to_csv(csv_path, num_states, config_sensor, gait_param, Algorithm, participant_of_interest, symmetry_range, similarity)
+                # print('%s - %s  :  %.5f' % (trial_types_print[i], trial_types_print[j], mean_dif))
+
+"""
         # for each symmetry range, train num_models_train HMMs on respective training data, stored in hmm_models dict
         for trial_type in trial_types:
             # print('Training %s models...' % (trial_type))
@@ -699,3 +750,4 @@ for participant_of_interest in list(reversed(list(sym_range_parts.keys()))):
                 # print('%s - %s  :  %.5f' % (trial_types_print[i], trial_types_print[j], mean_dif))
 
         logging.info('')
+"""
