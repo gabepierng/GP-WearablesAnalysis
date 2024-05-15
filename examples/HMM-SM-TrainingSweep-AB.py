@@ -42,6 +42,10 @@ def add_row_to_csv(csv_path, num_states, sensor_config, gait_param, algorithm, p
     with open(csv_path, mode='a', newline='') as file:
         writer = csv.writer(file)
         writer.writerow([num_states, sensor_config, gait_param, algorithm, participant_num,s1,s2,symm_range,similarity])
+        file_exists = os.path.isfile(csv_path)
+        header = ["states","sensor_config","gait_param","algorithm","participant","L1","L2","LevelParamValues","similarity"]
+        if not file_exists or os.stat(csv_path).st_size == 0:
+            writer.writerow(header)
 #initialize_csv(csv_path)
 # create log file to store model experiment results
 run_time = datetime.datetime.now().strftime("%d-%m-%y_%H-%M")
