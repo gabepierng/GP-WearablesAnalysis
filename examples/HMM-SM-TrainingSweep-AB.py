@@ -1,6 +1,5 @@
 from google.cloud import storage
 import pandas as pd
-
 import matplotlib.pyplot as plt
 from scipy.signal import find_peaks
 import numpy as np
