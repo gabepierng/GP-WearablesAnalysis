@@ -14,7 +14,6 @@ import sys
 from scipy import signal
 import scipy.interpolate as interp
 sys.path.append(os.path.join(sys.path[0], '..', 'src'))
-print(sys.path[0])
 import excel_reader_gcp as excel_reader
 from hmmlearn import hmm
 import logging
@@ -29,14 +28,7 @@ script_dir = os.path.dirname(__file__)
 current_datetime = datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
 csv_filename = f"logresults.csv" #Builds a log file based on the current time to keep track of runs
 csv_path = os.path.join(script_dir, csv_filename)
-print(script_dir)
 
-"""
-def initialize_csv(csv_path):
-    with open(csv_path, mode='w', newline='') as file:
-        writer = csv.writer(file)
-        writer.writerow(['States', 'SensorConfig', 'GaitParamPartition', 'Algorithm', 'Participant Number','Symm_Range','Similarity'])
-"""
 # Function to add a row of data to the CSV file
 def add_row_to_csv(csv_path, num_states, sensor_config, gait_param, algorithm, participant_num,s1,s2,symm_range, similarity):
     with open(csv_path, mode='a', newline='') as file:
@@ -46,7 +38,7 @@ def add_row_to_csv(csv_path, num_states, sensor_config, gait_param, algorithm, p
         header = ["states","sensor_config","gait_param","algorithm","participant","L1","L2","LevelParamValues","similarity"]
         if not file_exists or os.stat(csv_path).st_size == 0:
             writer.writerow(header)
-#initialize_csv(csv_path)
+
 # create log file to store model experiment results
 run_time = datetime.datetime.now().strftime("%d-%m-%y_%H-%M")
 
@@ -213,7 +205,6 @@ def reshape_vector(vectors_orig, new_size, num_axes = 3):
 
     return np.array(trial_reshaped)
 
-
 '''
 Initialize HMM class and models
 Functions:
@@ -283,6 +274,7 @@ sym_range_parts = {
 }
 
 # sensor configurations to test. Single sensors, and combining the upper leg signals and lower leg signals together
+"""
 sensor_combos = [['Pelvis'],
                 ['LowerR', 'LowerL'],
                 ['UpperR', 'UpperL'],
@@ -291,11 +283,16 @@ sensor_combos = [['Pelvis'],
                 ['LowerR'],
                 ['LowerL']
                 ]
+"""
+sensor_combos = [['Pelvis'],
+                ['LowerR', 'LowerL'],
+                ['UpperR', 'UpperL'],
+                ]
 
 # parameters to use for the HMM model training. Number of gait cycles to concatenate (along time axis), HMM states, iterations, and training tolerance
 strides_to_concat = 4
-num_states=5
-train_iterations = 300
+num_states=2 #Changed from 5 to 2
+train_iterations = 300 
 train_tolerance = 1e-2
 logging.info(f'Strides to concat: {strides_to_concat}   # HMM States: {num_states}   Max Iter.: {train_iterations}    Tol.: {train_tolerance}')
 
@@ -475,9 +472,7 @@ for participant_of_interest in list(reversed(list(sym_range_parts.keys()))):
     sym_list = []
     for i in range(len(sym_ranges)):
         symmetry_split_into_ranges.append( np.array([stance_time_symmetry[k] for k in sym_strides_to_add[i]]) )
-        #trial_types.append('Avg. Sym - ' + str( np.round( np.mean(symmetry_split_into_ranges[-1]), 3) ) )
-        trial_types.append(np.round( np.mean(symmetry_split_into_ranges[-1]), 3) )
-        print(trial_types)
+        trial_types.append('Avg. Sym - ' + str( np.round( np.mean(symmetry_split_into_ranges[-1]), 3) ) )
         sym_list.append(np.round(np.mean(symmetry_split_into_ranges[-1]), 3))
         sym_range_strides[trial_types[-1]] = {}
         for sensor in sensor_locs:
@@ -529,39 +524,9 @@ for participant_of_interest in list(reversed(list(sym_range_parts.keys()))):
         hmm_models = {}
         num_models_train = 10
 
-#DUMMY FOR LOGGING RESULTS (don't want to train anything yet) -------------------------------------------------------
-        
-        for i in range(len(trial_types)):
-            #print("")
-            for j in range(len(trial_types)):
-                sum_dif = 0
-                count = 0
-                for k in range(num_models_train):
-                    if(i == j):
-                        indices = [a for a in range(num_models_train) if (not a == k)]
-                    else:
-                        indices = np.arange(num_models_train)
-                    for m in indices:
-                        x = 3 #DUMMY
-                        sum_dif = sum_dif + 0.5 #DUMMY
-                        count = count+1
-
-                # log average HMM-SM similarity
-                mean_dif = sum_dif / count
-                logging.info(f'{trial_types[i]} - {trial_types[j]}   :   {str(np.round(mean_dif, 5))}')
-                symmetry_range = f'{trial_types[i]} - {trial_types[j]}'
-                
-                similarity = np.round(mean_dif, 5)
-                
-                if i == 0:
-                    add_row_to_csv(csv_path, num_states, config_sensor, gait_param, Algorithm, participant_of_interest,1,j+1,trial_types, similarity)
-                
-                # print('%s - %s  :  %.5f' % (trial_types_print[i], trial_types_print[j], mean_dif))
-""""""
-"""
         # for each symmetry range, train num_models_train HMMs on respective training data, stored in hmm_models dict
         for trial_type in trial_types:
-            # print('Training %s models...' % (trial_type))
+            print('Training %s models...' % (trial_type))
             hmm_models[trial_type] = []
 
             for j in range(num_models_train):
@@ -569,7 +534,7 @@ for participant_of_interest in list(reversed(list(sym_range_parts.keys()))):
                 k = 0
 
                 while(train_forward_model):
-                    # print('Train Attempt ', k+1, end="\r", flush=True)
+                    print('Train Attempt ', k+1, end="\r", flush=True)
                     if(j > -1):
                         np.random.shuffle(concat_strides[trial_type])
 
@@ -760,6 +725,39 @@ for participant_of_interest in list(reversed(list(sym_range_parts.keys()))):
                 mean_dif = sum_dif / count
                 logging.info(f'{trial_types[i]} - {trial_types[j]}   :   {str(np.round(mean_dif, 5))}')
                 # print('%s - %s  :  %.5f' % (trial_types_print[i], trial_types_print[j], mean_dif))
+                #Only output the first row (S11,S12,S13)
+                if i == 0:
+                    add_row_to_csv(csv_path, num_states, config_sensor, gait_param, Algorithm, participant_of_interest,1,j+1,sym_list,mean_dif)
 
         logging.info('')
+
+
 """
+DUMMY FOR LOGGING RESULTS (don't want to train anything yet) -------------------------------------------------------
+        
+        for i in range(len(trial_types)):
+            #print("")
+            for j in range(len(trial_types)):
+                sum_dif = 0
+                count = 0
+                for k in range(num_models_train):
+                    if(i == j):
+                        indices = [a for a in range(num_models_train) if (not a == k)]
+                    else:
+                        indices = np.arange(num_models_train)
+                    for m in indices:
+                        x = 3 #DUMMY
+                        sum_dif = sum_dif + 0.5 #DUMMY
+                        count = count+1
+
+                # log average HMM-SM similarity
+                mean_dif = sum_dif / count
+                logging.info(f'{trial_types[i]} - {trial_types[j]}   :   {str(np.round(mean_dif, 5))}')
+                symmetry_range = f'{trial_types[i]} - {trial_types[j]}'
+                
+                similarity = np.round(mean_dif, 5)
+                
+                if i == 0:
+                    add_row_to_csv(csv_path, num_states, config_sensor, gait_param, Algorithm, participant_of_interest,1,j+1,trial_types, similarity)
+                
+                # print('%s - %s  :  %.5f' % (trial_types_print[i], trial_types_print[j], mean_dif))"""
