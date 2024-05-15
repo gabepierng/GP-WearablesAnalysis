@@ -27,22 +27,22 @@ gait_param = 'SMM'
 Algorithm = 'HMM'
 script_dir = os.path.dirname(__file__)
 current_datetime = datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
-csv_filename = f"{Algorithm}_{gait_param}_log_{current_datetime}.csv" #Builds a log file based on the current time to keep track of runs
+csv_filename = f"logresults.csv" #Builds a log file based on the current time to keep track of runs
 csv_path = os.path.join(script_dir, csv_filename)
 print(script_dir)
 
+"""
 def initialize_csv(csv_path):
     with open(csv_path, mode='w', newline='') as file:
         writer = csv.writer(file)
         writer.writerow(['States', 'SensorConfig', 'GaitParamPartition', 'Algorithm', 'Participant Number','Symm_Range','Similarity'])
-
+"""
 # Function to add a row of data to the CSV file
-def add_row_to_csv(csv_path, num_states, sensor_config, gait_param, algorithm, participant_num,symm_range,similarity):
+def add_row_to_csv(csv_path, num_states, sensor_config, gait_param, algorithm, participant_num,s1,s2,symm_range, similarity):
     with open(csv_path, mode='a', newline='') as file:
         writer = csv.writer(file)
-        writer.writerow([num_states, sensor_config, gait_param, algorithm, participant_num,symm_range,similarity])
-
-initialize_csv(csv_path)
+        writer.writerow([num_states, sensor_config, gait_param, algorithm, participant_num,s1,s2,symm_range,similarity])
+#initialize_csv(csv_path)
 # create log file to store model experiment results
 run_time = datetime.datetime.now().strftime("%d-%m-%y_%H-%M")
 
@@ -468,9 +468,13 @@ for participant_of_interest in list(reversed(list(sym_range_parts.keys()))):
     # move STSR values, trial types named by mean STSR for each group
     # sym_range_strides = dict of [trial types][DOT sensor locations], elements being numpy arrays
     trial_types = []
+    sym_list = []
     for i in range(len(sym_ranges)):
         symmetry_split_into_ranges.append( np.array([stance_time_symmetry[k] for k in sym_strides_to_add[i]]) )
-        trial_types.append('Avg. Sym - ' + str( np.round( np.mean(symmetry_split_into_ranges[-1]), 3) ) )
+        #trial_types.append('Avg. Sym - ' + str( np.round( np.mean(symmetry_split_into_ranges[-1]), 3) ) )
+        trial_types.append(np.round( np.mean(symmetry_split_into_ranges[-1]), 3) )
+        print(trial_types)
+        sym_list.append(np.round(np.mean(symmetry_split_into_ranges[-1]), 3))
         sym_range_strides[trial_types[-1]] = {}
         for sensor in sensor_locs:
             sym_range_strides[trial_types[-1]][sensor] = partitioned_signals_dot_grouped[sensor][sym_strides_to_add[i]]
@@ -522,8 +526,9 @@ for participant_of_interest in list(reversed(list(sym_range_parts.keys()))):
         num_models_train = 10
 
 #DUMMY FOR LOGGING RESULTS (don't want to train anything yet) -------------------------------------------------------
+        
         for i in range(len(trial_types)):
-            # print()
+            #print("")
             for j in range(len(trial_types)):
                 sum_dif = 0
                 count = 0
@@ -541,10 +546,14 @@ for participant_of_interest in list(reversed(list(sym_range_parts.keys()))):
                 mean_dif = sum_dif / count
                 logging.info(f'{trial_types[i]} - {trial_types[j]}   :   {str(np.round(mean_dif, 5))}')
                 symmetry_range = f'{trial_types[i]} - {trial_types[j]}'
+                
                 similarity = np.round(mean_dif, 5)
-                add_row_to_csv(csv_path, num_states, config_sensor, gait_param, Algorithm, participant_of_interest, symmetry_range, similarity)
+                
+                if i == 0:
+                    add_row_to_csv(csv_path, num_states, config_sensor, gait_param, Algorithm, participant_of_interest,1,j+1,trial_types, similarity)
+                
                 # print('%s - %s  :  %.5f' % (trial_types_print[i], trial_types_print[j], mean_dif))
-
+""""""
 """
         # for each symmetry range, train num_models_train HMMs on respective training data, stored in hmm_models dict
         for trial_type in trial_types:
