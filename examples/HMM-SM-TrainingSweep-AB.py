@@ -291,7 +291,7 @@ sensor_combos = [['Pelvis'],
 
 # parameters to use for the HMM model training. Number of gait cycles to concatenate (along time axis), HMM states, iterations, and training tolerance
 strides_to_concat = 4
-num_states=2 #Changed from 5 to 2
+num_states=3 #Changed from 5 to 2
 train_iterations = 300 
 train_tolerance = 1e-2
 logging.info(f'Strides to concat: {strides_to_concat}   # HMM States: {num_states}   Max Iter.: {train_iterations}    Tol.: {train_tolerance}')
@@ -370,6 +370,7 @@ for participant_of_interest in list(reversed(list(sym_range_parts.keys()))):
 
             # load Xsens MVN full data
             xsens_path_file = os.path.join(bucket_dir, prefix_from_bucket, 'Excel_Data/', xsens_file).replace("\\", "/")
+            print(xsens_path_file)
             # lower_body_strides, gait_params, partitioned_dot_signal = excel_reader.process_trial_data(0, xsens_path_file, xsens_dot[0][-1], stride_events)
 
             '''
@@ -442,17 +443,24 @@ for participant_of_interest in list(reversed(list(sym_range_parts.keys()))):
     # get all stance time symmetry values from MVN data (in order matching the partitioned dot signals), and delete corresponding overflow STSR elements
     stance_time_symmetry = [item for sublist in [i[12] for i in part_gait_params['AB']] for item in sublist]
     stance_time_symmetry = np.delete(stance_time_symmetry, overflow_check)
+    print('Mean symmetry: %.3f ± %.3f' % (np.mean(stance_time_symmetry), np.std(stance_time_symmetry)))
+    print('Upper 95% of the data: ', sorted(stance_time_symmetry)[round(0.95 * len(stance_time_symmetry))])
+    print('Lower 95% of the data: ', sorted(stance_time_symmetry)[round(0.05 * len(stance_time_symmetry))])
+    print()
 
     # visualize STSR values per participant
-    # plt.figure(figsize = (10, 4))
-    # y = (np.zeros(len(stance_time_symmetry))) + np.random.normal(0,  0.02, len(stance_time_symmetry))
-    # plt.scatter(stance_time_symmetry, y, s = 6, color='black')
+    plt.figure(figsize = (10, 4))
+    y = (np.zeros(len(stance_time_symmetry))) + np.random.normal(0,  0.02, len(stance_time_symmetry))
+    plt.scatter(stance_time_symmetry, y, s = 6, color='black')
 
-    # if(ab_or_llpu == 'AB'):
-    #     plt.xlim([0.7, 1.10])
-    # else:
-    #     plt.xlim([0.8, 1.2])
+    if(ab_or_llpu == 'AB'):
+        plt.xlim([0.7, 1.10])
+        plt.show()
+    else:
+        plt.xlim([0.8, 1.2])
+        plt.show()
 
+'''
     sym_ranges = sym_range_parts[participant_of_interest]
     
     sym_range_strides = {}              # store gait cycles for each of STSR ranges
@@ -615,6 +623,7 @@ for participant_of_interest in list(reversed(list(sym_range_parts.keys()))):
         shift_all = 0
 
         '''
+"""
         HMMs may have similar transition matrices, but associate the states with different parts of the gait cycle.
         For example, for HMM-1, states 1,2,3 might correspond to 2,3,1 in HMM-2. To align them for hidden-state
         sequence comparison, need to rotate the transition matrices and emissions matrices. Function compares hidden
@@ -626,6 +635,7 @@ for participant_of_interest in list(reversed(list(sym_range_parts.keys()))):
             n_states: number of states for HMM models
 
         Returns roll amount as input to np.roll to rotate elements of HMM matrices to align HMM-1 and HMM-2
+""""""
         '''
         def find_best_alignment(hmm_1, hmm_2, test_stride, n_states):
             min_distance = 9999999
@@ -732,7 +742,7 @@ for participant_of_interest in list(reversed(list(sym_range_parts.keys()))):
         logging.info('')
 
 
-"""
+
 DUMMY FOR LOGGING RESULTS (don't want to train anything yet) -------------------------------------------------------
         
         for i in range(len(trial_types)):
