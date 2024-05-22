@@ -242,7 +242,6 @@ class XsensGaitDataParser:
 
             r_to_l_steps = np.array(r_to_l_steps).T
             l_to_r_steps = np.array(l_to_r_steps).T
-            
             r_to_l_strides = np.array(r_to_l_strides).T
 
             # double stance double_stance_support as percent of gait cycle
@@ -669,8 +668,8 @@ class XsensGaitDataParser:
         # so that all trials are a single pass, use simpler center calculation to avoid case where starting
         # or stopping at beginning/end of trial skews centroid of data
         center = [0,0]
-        # center = [(endPos[0] + startPos[0]) / 2, (endPos[1] + startPos[1]) / 2]
-        center[0], center[1], _ = centroid_poly(pelvis_position[:,0], pelvis_position[:,1])
+        center = [(endPos[0] + startPos[0]) / 2, (endPos[1] + startPos[1]) / 2]
+        #center[0], center[1], _ = centroid_poly(pelvis_position[:,0], pelvis_position[:,1])
         
         dist = np.sqrt((endPos[0] - center[0])**2 + (endPos[1] - center[1])**2)
 
