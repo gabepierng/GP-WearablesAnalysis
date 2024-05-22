@@ -22,7 +22,6 @@ import csv
 
 XsensGaitParser =  excel_reader.XsensGaitDataParser()
 
-#Base directory
 base_directory = "Q:\\gaitbfb_propellab\\Wearable Biofeedback System (REB-0448)\\Data\\Raw Data"
 run_time = datetime.datetime.now().strftime("%d-%m-%y_%H-%M")
 logging.basicConfig(filename=f'../log_files/{run_time}_ParticipantInfo.log',
@@ -34,7 +33,7 @@ for subfolder_name in os.listdir(base_directory):
     if subfolder_name.startswith("LLPU"):
         llpu_folder_path = os.path.join(base_directory, subfolder_name)
 
-        # Look for the "Excel_Data_Trimmed" folder within the LLPU folders
+        # Look for the "Excel_Data_Trimmed" folder within each of the LLPU folders
         excel_data_path = os.path.join(llpu_folder_path, "Excel_Data_Trimmed")
         if os.path.isdir(excel_data_path):
             print(f"Processing folder: {excel_data_path}")
@@ -44,18 +43,18 @@ for subfolder_name in os.listdir(base_directory):
             part_kinematic_params = {}
             trial_type = 'LLPU'
 
-            # Looping through each file in the "Excel_Data_Trimmed" folder
+            
             for filename in os.listdir(excel_data_path):
                 if filename.endswith('.csv'):
                     xsens_path_file = os.path.join(excel_data_path, filename)
                     print(f"Processing file: {xsens_path_file}")
                     try:
-                        # Process the file
+                        
                         XsensGaitParser.process_mvn_trial_data(xsens_path_file)
                         partitioned_mvn_data = XsensGaitParser.get_partitioned_mvn_data()
                         gait_params = XsensGaitParser.get_gait_param_info()
 
-                        # Aggregate data
+                        # Aggregate all of the data for each participant 
                         if trial_type in part_strides:
                             for body_part in part_strides[trial_type]:
                                 for i, side in enumerate(part_strides[trial_type][body_part]):
@@ -74,7 +73,7 @@ for subfolder_name in os.listdir(base_directory):
                             part_gait_params[trial_type] = [gait_params['spatio_temp']]
                             part_kinematic_params[trial_type] = gait_params['kinematics']
                     
-                    except IndexError as e:
+                    except IndexError as e: #Exception based on an Index Error encountered in the excel_reader_gcp.py code -- still need to debug this **
                         print(f"Skipping file {xsens_path_file} due to error: {e}")
                         logging.error(f"Skipping file {xsens_path_file} due to error: {e}")
                         continue
@@ -119,13 +118,13 @@ for subfolder_name in os.listdir(base_directory):
                 print('Lower 95% of the data: ', sorted(stance_time_symmetry)[round(0.05 * len(stance_time_symmetry))])
                 print() 
                 logging.info(f'Folder: {excel_data_path}')
-                logging.info(f'Num Strides: {len(stance_time_symmetry)}')
-                logging.info(f'Mean Symmetry: {np.mean(stance_time_symmetry)}')
-                logging.info(f'Stdev Symmetry: {np.std(stance_time_symmetry)}')
-                logging.info(f'Upper 95% Symmetry: {sorted(stance_time_symmetry)[round(0.95 * len(stance_time_symmetry))]}')
-                logging.info(f'Upper 95% Symmetry: {sorted(stance_time_symmetry)[round(0.05 * len(stance_time_symmetry))]}')
-                logging.info(f'MIN Symmetry: {np.min(stance_time_symmetry)}')
-                logging.info(f'MAX Symmetry: {np.max(stance_time_symmetry)}')
+                logging.info(f'NumStrides: {len(stance_time_symmetry)}')
+                logging.info(f'MeanSymmetry: {np.mean(stance_time_symmetry)}')
+                logging.info(f'StdevSymmetry: {np.std(stance_time_symmetry)}')
+                logging.info(f'Upper95%Symmetry: {sorted(stance_time_symmetry)[round(0.95 * len(stance_time_symmetry))]}')
+                logging.info(f'Upper95%Symmetry: {sorted(stance_time_symmetry)[round(0.05 * len(stance_time_symmetry))]}')
+                logging.info(f'MINSymmetry: {np.min(stance_time_symmetry)}')
+                logging.info(f'MAXSymmetry: {np.max(stance_time_symmetry)}')
                 logging.info('--------------')
                 
             else:
