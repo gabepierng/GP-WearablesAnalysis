@@ -655,7 +655,7 @@ class XsensGaitDataParser:
         # print(pelvis_position.shape)
         foot_position = self.get_foot_position()
         # takes into account X and Y to deal with orientation drift over time. If single pass, can typically set close to 1.0 to eliminate start/stop
-        range_to_keep = 0.80
+        range_to_keep = 0.98
 
         startInd = np.argmin(pelvis_position[:,0])
         endInd = np.argmax(pelvis_position[:,0])
@@ -693,8 +693,8 @@ class XsensGaitDataParser:
         plt.xlim([-5, 25])
         plt.ylim([-15, 15])
         plt.show()
+       
         '''
-        
 
         # retrieve foot contact data, used to identify valid heel strikes and corresponding toe-offs
         seq = [0., 1.]

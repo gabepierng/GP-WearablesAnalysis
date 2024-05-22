@@ -30,7 +30,7 @@ logging.basicConfig(filename=f'../log_files/{run_time}_ParticipantInfo.log',
 
 # Iterate through each subfolder in the base directory that starts with "LLPU"
 for subfolder_name in os.listdir(base_directory):
-    if subfolder_name.startswith("LLPU"):
+    if subfolder_name.startswith("LLPU_P11"):
         llpu_folder_path = os.path.join(base_directory, subfolder_name)
 
         # Look for the "Excel_Data_Trimmed" folder within each of the LLPU folders
@@ -119,12 +119,12 @@ for subfolder_name in os.listdir(base_directory):
                 print() 
                 logging.info(f'Folder: {excel_data_path}')
                 logging.info(f'NumStrides: {len(stance_time_symmetry)}')
-                logging.info(f'MeanSymmetry: {np.mean(stance_time_symmetry)}')
-                logging.info(f'StdevSymmetry: {np.std(stance_time_symmetry)}')
-                logging.info(f'Upper95%Symmetry: {sorted(stance_time_symmetry)[round(0.95 * len(stance_time_symmetry))]}')
-                logging.info(f'Upper95%Symmetry: {sorted(stance_time_symmetry)[round(0.05 * len(stance_time_symmetry))]}')
-                logging.info(f'MINSymmetry: {np.min(stance_time_symmetry)}')
-                logging.info(f'MAXSymmetry: {np.max(stance_time_symmetry)}')
+                logging.info(f'MeanSymmetry: {round(np.mean(stance_time_symmetry),3)}')
+                logging.info(f'StdevSymmetry: {round(np.std(stance_time_symmetry),3)}')
+                logging.info(f'Upper95%Symmetry: {sorted(stance_time_symmetry)[round(0.95 * len(stance_time_symmetry),3)]}')
+                logging.info(f'Lower95%Symmetry: {sorted(stance_time_symmetry)[round(0.05 * len(stance_time_symmetry),3)]}')
+                logging.info(f'MINSymmetry: {round(np.min(stance_time_symmetry),3)}')
+                logging.info(f'MAXSymmetry: {round(np.max(stance_time_symmetry),3)}')
                 logging.info('--------------')
                 
             else:
