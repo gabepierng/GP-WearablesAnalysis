@@ -54,7 +54,7 @@ def tslearn_dtw_analysis(set1, set2=None):
         path, distance = dtw_path(data1.astype(np.double), data2.astype(np.double))
         return distance
     
-    dtw_dist = []; 
+    dtw_dist = [] 
     
     if set2 is None:
         for i in range(len(set1)):
