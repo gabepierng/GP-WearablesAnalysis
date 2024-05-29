@@ -46,28 +46,28 @@ def calc_gait_profile_score(part_kinematics, control_kinematics):
 
 
 """ TSLEARN DTW - documentation: https://tslearn.readthedocs.io/en/stable/gen_modules/metrics/tslearn.metrics.dtw_path.html#tslearn.metrics.dtw_path
-Inputs:
-    set1, set2 (optional): List containing (sz,D) arrays, where D is the dimension of the data, sz is the length of the gait cycle
-Returns:
-    Mean DTW distance between partitioned gait cycles - if set 1 and set 2 are inputs, the DTW distance between datasets is computed. If set 1 is an input, the within DTW distance is computed.
+Inputs: set1, set2 (optional): List containing (sz,D) arrays as elements, where D is the dimension of the data, sz is the length of the gait cycle 
+Returns: Mean DTW distance between partitioned gait cycles - if set 1 and set 2 are inputs, the DTW distance between datasets is computed. If set 1 is an input, the within DTW distance is computed.
 """
+    
 def tslearn_dtw_analysis(set1, set2=None):
-        def tslearndtw_distance(data1, data2):
-            path, distance = dtw_path(data1.astype(np.double), data2.astype(np.double))
-            return distance
-        dtw_dist_within = []; dtw_dist_between = []
-        #If only one dataset is provided, will compute the DTW distances within the partitioned gait cycle data.
-        if set2 is None:
-            for i in range(len(set1)):
-                for j in range(i + 1, len(set1)):
-                    distance = tslearndtw_distance(set1[i], set1[j])
-                    dtw_dist_within.append(distance)
-            return {'Mean DTW distances': stats.mean(dtw_dist_within)}
-        #Computes the DTW distances between gait cycles between 2 different files.
-        else:
-            for gaitcycle1 in set1:
-                for gaitcycle2 in set2:
-                    distance = tslearndtw_distance(gaitcycle1, gaitcycle2)
-                    dtw_dist_between.append(distance)
-            return {'Mean DTW distances': stats.mean(dtw_dist_between)}
+    def tslearndtw_distance(data1, data2):
+        path, distance = dtw_path(data1.astype(np.double), data2.astype(np.double))
+        return distance
+    
+    dtw_dist_within = []; dtw_dist_between = []
+    
+    if set2 is None:
+        for i in range(len(set1)):
+            for j in range(i + 1, len(set1)):
+                distance = tslearndtw_distance(set1[i], set1[j])
+                dtw_dist_within.append(distance)
+        return {'Mean DTW distances': stats.mean(dtw_dist_within)}
+    else:
+        for gaitcycle1 in set1:
+            for gaitcycle2 in set2:
+                distance = tslearndtw_distance(gaitcycle1, gaitcycle2)
+                dtw_dist_between.append(distance)
+        return {'Mean DTW distances': stats.mean(dtw_dist_between)}
+
         
