@@ -77,7 +77,6 @@ def tslearn_dtw_analysis(set1, set2=None):
 
 """
 Training a Self Organizing Map (SOM)
-
 Parameters:
     control_data (numpy array): The input data for training the SOM. Dimensions NxD, where D is the dimension of the data 
     learning_rate (float): The initial learning rate for the SOM.
@@ -98,18 +97,6 @@ def train_minisom(control_data, learning_rate=0.1, topology='hexagonal'):
     
     som.random_weights_init(control_data) #Initializes the weights of the SOM picking random samples from data.
     som.train_batch(control_data, steps) #Trains the SOM using all the vectors in data sequentially.
-
-    # Calculate the dimensions of the SOM and training steps
-    dim = int(np.sqrt((5 * np.sqrt(control_data.shape[0]))))
-    som_dim = (dim, dim)
-    steps = 500 * (dim ** 2)
-    
-    # Initialize the MiniSom
-    som = MiniSom(x=som_dim[0], y=som_dim[1], input_len=control_data.shape[1], sigma=dim/4, learning_rate=learning_rate, topology=topology)
-    
-    # Randomly initialize weights and train the SOM
-    som.random_weights_init(control_data)
-    som.train_batch(control_data, steps)
     
     """    
     Resources
