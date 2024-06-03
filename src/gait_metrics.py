@@ -48,10 +48,10 @@ def calc_gait_profile_score(part_kinematics, control_kinematics):
 
 """ 
 TSLEARN DTW - documentation: https://tslearn.readthedocs.io/en/stable/gen_modules/metrics/tslearn.metrics.dtw_path.html#tslearn.metrics.dtw_path
-Parameters: 
-    set1, set2 (List): List containing (sz,D) arrays as elements, where D is the dimension of the data, sz is the length of the gait cycle 
-Returns: 
-    Mean DTW distance between partitioned gait cycles - if set 1 and set 2 are inputs, the DTW distance between datasets is computed. If set 1 is an input, the within DTW distance is computed.
+    Parameters: 
+        set1, set2 (List): List containing (sz,D) arrays as elements, where D is the dimension of the data, sz is the length of the gait cycle 
+    Returns: 
+        Mean DTW distance between partitioned gait cycles - if set 1 and set 2 are inputs, the DTW distance between datasets is computed. If set 1 is an input, the within DTW distance is computed.
 """
    
 def tslearn_dtw_analysis(set1, set2=None):
@@ -77,12 +77,12 @@ def tslearn_dtw_analysis(set1, set2=None):
 
 """
 Training a Self Organizing Map (SOM)
-Parameters:
-    control_data (numpy array): The input data for training the SOM. Dimensions NxD, where D is the dimension of the data 
-    learning_rate (float): The initial learning rate for the SOM.
-    topology (str): The topology of the SOM ('rectangular' or 'hexagonal').
-Returns:
-    som: Trained SOM
+    Parameters:
+        control_data (numpy array): The input data for training the SOM. Dimensions NxD, where D is the dimension of the data 
+        learning_rate (float): The initial learning rate for the SOM.
+        topology (str): The topology of the SOM ('rectangular' or 'hexagonal').
+    Returns:
+        som (class 'minisom.MiniSom'): Trained SOM
 """
 
 def train_minisom(control_data, learning_rate=0.1, topology='hexagonal'):
@@ -102,7 +102,6 @@ def train_minisom(control_data, learning_rate=0.1, topology='hexagonal'):
     Resources
     [1]	    Juha. Vesanto and (Libella), SOM toolbox for Matlab 5. Helsinki University of Technology, 2000.
     [2]	    S. Lek and Y. S. Park, “Artificial Neural Networks,” Encyclopedia of Ecology, Five-Volume Set, vol. 1–5, pp. 237–245, Jan. 2008, doi: 10.1016/B978-008045405-4.00173-7.
-    
     """
     return som
 
