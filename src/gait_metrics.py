@@ -124,8 +124,6 @@ Returns:
 
 def calculate_MDP(data, controldata, som, normalize=True):
     
-    weight_array = som._weights.reshape(som._weights.shape[0]*som._weights.shape[1],som._weights.shape[2])
-    
     if normalize: #Denormalizing the SOM weight vectors based on the data that was used for training 
         restruct = som._weights.reshape(som._weights.shape[0]*som._weights.shape[1],som._weights.shape[2]) #Reshaping to a 2D array 
         means = np.mean(controldata, axis=0, keepdims=True)
