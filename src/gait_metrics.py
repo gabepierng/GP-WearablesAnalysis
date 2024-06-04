@@ -14,8 +14,6 @@ Inputs:
     
     both part_kinmatics and control_kinematics should be reshaped to be 2% increments of the gait cycle. This leads to 51
     data points (eg. HS to subsequent HS)
-
-
 '''
 def calc_gait_profile_score(part_kinematics, control_kinematics):
     # organize kinematics into single array
@@ -74,14 +72,6 @@ def tslearn_dtw_analysis(set1, set2=None):
                 dtw_dist.append(distance)
         return np.mean(dtw_dist)
 
-#Normalizing the column variances to be 1 as specified in Barton article
-def normalize_columns_variance_1(array):
-    means = np.mean(array, axis=0, keepdims=True)
-    mean_centered_array = array - means
-    std_devs = np.std(mean_centered_array, axis=0, ddof=0, keepdims=True)  
-    normalized_array = mean_centered_array / std_devs
-    return normalized_array
-
 """
 Training a Self Organizing Map (SOM)
     Parameters:
@@ -95,7 +85,11 @@ Training a Self Organizing Map (SOM)
 def train_minisom(control_data, learning_rate=0.1, topology='hexagonal', normalize=True):
     
     if normalize:
-        control_data = normalize_columns_variance_1(control_data)
+        means = np.mean(control_data, axis=0, keepdims=True)
+        mean_centered_array = control_data - means
+        std_devs = np.std(mean_centered_array, axis=0, ddof=0, keepdims=True) #Along each column 
+        control_data = mean_centered_array / std_devs
+        
     # Parameters for training/initializing: 
     dim = int(np.sqrt(5 * np.sqrt(control_data.shape[0]))) # Heuristic: # map units = 5*sqrt(n) [1]
     som_dim = (dim, dim)
@@ -104,27 +98,45 @@ def train_minisom(control_data, learning_rate=0.1, topology='hexagonal', normali
     
     som = MiniSom(x=som_dim[0], y=som_dim[1], input_len=control_data.shape[1], sigma=sigma, learning_rate=learning_rate, topology=topology) # Initializing the SOM 
     
-    som.random_weights_init(control_data) # Initializes the weights of the SOM picking random samples from data.
+    #som.random_weights_init(control_data) # Initializes the weights of the SOM picking random samples from data.
     som.train_batch(control_data, steps) # Trains the SOM using all the vectors in data sequentially.
+    
+    return som
     
     """    
     Resources
     [1]	    Juha. Vesanto and (Libella), SOM toolbox for Matlab 5. Helsinki University of Technology, 2000.
     [2]	    S. Lek and Y. S. Park, “Artificial Neural Networks,” Encyclopedia of Ecology, Five-Volume Set, vol. 1–5, pp. 237–245, Jan. 2008, doi: 10.1016/B978-008045405-4.00173-7.
     """
-    return som
 
 """    
 Calculates Mean MDP scores for the given data and trained SOM.
 Parameters:
     data (numpy array): The input data for which Mean MDP scores are calculated.
+    controldata (numpy array): Data that the SOM was trained with -- only really needed if normalization is selected 
     som (MiniSom): The trained SOM.
+    means (numpy array): The means used for normalization.
+    std_devs (numpy array): The standard deviations used for normalization.
+    normalize (bool): Whether the data was normalized.
 Returns:
     deviation: Euclidian distance between BMU and dataset for each time point -- used to generate MDP
 """
 
-def calculate_MDP(data, som):
+def calculate_MDP(data, controldata, som, normalize=True):
+    
+    weight_array = som._weights.reshape(som._weights.shape[0]*som._weights.shape[1],som._weights.shape[2])
+    
+    if normalize: #Denormalizing the SOM weight vectors based on the data that was used for training 
+        restruct = som._weights.reshape(som._weights.shape[0]*som._weights.shape[1],som._weights.shape[2]) #Reshaping to a 2D array 
+        means = np.mean(controldata, axis=0, keepdims=True)
+        std_devs = np.std(controldata, axis=0, ddof=0, keepdims=True) #Along each column 
+        weight_array = restruct*std_devs + means
+        weight_restruct = weight_array.reshape(som._weights.shape[0], som._weights.shape[1], som._weights.shape[2])
+        som._weights = weight_restruct #Reassigning the weight vectors 
+    
     winners = np.array([som.winner(instance) for instance in data])  # Finds the best matching unit (BMU) for all time points in the data
     BMU = som._weights[winners[:, 0], winners[:, 1]]  # Collects the corresponding weight vectors for all BMUs
     deviation = np.linalg.norm(data - BMU, axis=1)  # Calculate Euclidean distances in the full dataset
     return deviation
+
+
