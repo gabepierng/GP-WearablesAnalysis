@@ -74,6 +74,13 @@ def tslearn_dtw_analysis(set1, set2=None):
                 dtw_dist.append(distance)
         return np.mean(dtw_dist)
 
+#Normalizing the column variances to be 1 as specified in Barton article
+def normalize_columns_variance_1(array):
+    means = np.mean(array, axis=0, keepdims=True)
+    mean_centered_array = array - means
+    std_devs = np.std(mean_centered_array, axis=0, ddof=0, keepdims=True)  
+    normalized_array = mean_centered_array / std_devs
+    return normalized_array
 
 """
 Training a Self Organizing Map (SOM)
@@ -85,18 +92,20 @@ Training a Self Organizing Map (SOM)
         som (class 'minisom.MiniSom'): Trained SOM
 """
 
-def train_minisom(control_data, learning_rate=0.1, topology='hexagonal'):
- 
+def train_minisom(control_data, learning_rate=0.1, topology='hexagonal', normalize=True):
+    
+    if normalize:
+        control_data = normalize_columns_variance_1(control_data)
     # Parameters for training/initializing: 
-    dim = int(np.sqrt(5 * np.sqrt(control_data.shape[0]))) #Heuristic: # map units = 5*sqrt(n) [1]
+    dim = int(np.sqrt(5 * np.sqrt(control_data.shape[0]))) # Heuristic: # map units = 5*sqrt(n) [1]
     som_dim = (dim, dim)
-    steps = 500 * (dim ** 2) #Number of iterations - Heuristic: 500 * number of network units [2] 
-    sigma = dim/4 #Sigma used: Heuristic: max(msize)/4 [1]
+    steps = 500 * (dim ** 2) # Number of iterations - Heuristic: 500 * number of network units [2] 
+    sigma = dim / 4 # Sigma used: Heuristic: max(msize)/4 [1]
     
-    som = MiniSom(x=som_dim[0], y=som_dim[1], input_len=control_data.shape[1], sigma=sigma, learning_rate=learning_rate, topology=topology) #Initializing the SOM 
+    som = MiniSom(x=som_dim[0], y=som_dim[1], input_len=control_data.shape[1], sigma=sigma, learning_rate=learning_rate, topology=topology) # Initializing the SOM 
     
-    som.random_weights_init(control_data) #Initializes the weights of the SOM picking random samples from data.
-    som.train_batch(control_data, steps) #Trains the SOM using all the vectors in data sequentially.
+    som.random_weights_init(control_data) # Initializes the weights of the SOM picking random samples from data.
+    som.train_batch(control_data, steps) # Trains the SOM using all the vectors in data sequentially.
     
     """    
     Resources
