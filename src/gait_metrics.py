@@ -118,9 +118,9 @@ def train_minisom(control_data, learning_rate=0.1, topology='hexagonal', normali
     #Initializaing the second iterationof the SOM
     som2 = MiniSom(x=msize[0], y=msize[1], input_len=control_data.shape[1], sigma=sigma_new, learning_rate=learning_rate_new, topology=topology)
     som2._weights = som1._weights #Initializes with the weights from the first iteration 
-    som2.train(control_data,steps2, use_epochs=True)
+    som2.train(control_data, steps2, use_epochs=True)
     
-    return som2
+    return som2 #Returns the som generated from the second iteration
     
     """    
     Resources
@@ -153,7 +153,6 @@ def calculate_MDP(data, controldata, som, normalize=True):
     
     winners = np.array([som.winner(instance) for instance in data])  # Finds the best matching unit (BMU) for all time points in the data
     BMU = som._weights[winners[:, 0], winners[:, 1]]  # Collects the corresponding weight vectors for all BMUs
-    plt.show()
     deviation = np.linalg.norm(data - BMU, axis=1)  # Calculate Euclidean distances in the full dataset
     return deviation
 
