@@ -3,6 +3,7 @@ import numpy as np
 from tslearn.metrics import dtw_path
 from minisom import MiniSom
 import matplotlib.pyplot as plt
+import scipy.linalg as la
 
 '''
 Calculates the Gait Profile Score (GPS) as outlined by Baker et al. (https://pubmed.ncbi.nlm.nih.gov/19632117/)
@@ -91,17 +92,35 @@ def train_minisom(control_data, learning_rate=0.1, topology='hexagonal', normali
         control_data = mean_centered_array / std_devs
         
     # Parameters for training/initializing: 
-    dim = int(np.sqrt(5 * np.sqrt(control_data.shape[0]))) # Heuristic: # map units = 5*sqrt(n) [1]
-    som_dim = (dim, dim)
-    steps = 500 * (dim ** 2) # Number of iterations - Heuristic: 500 * number of network units [2] 
-    sigma = dim / 4 # Sigma used: Heuristic: max(msize)/4 [1]
+    dim = int(np.sqrt(5 * np.sqrt(control_data.shape[0]))) # Heuristic: # map units = 5*sqrt(n), where n is the number of training samples [1]
+    msize = (dim, dim)
+    #steps = 500 * (dim ** 2) # Number of iterations - Heuristic: 500 * number of network units [2] 
+    steps = int(10*(dim ** 2)/control_data.shape[0]) #Based on .trainlen = 10*m/n (m is # map units, n is the number of training samples)
+    sigma = max(msize) / 4 # Sigma used: Heuristic: max(msize)/4 [1] 
     
-    som = MiniSom(x=som_dim[0], y=som_dim[1], input_len=control_data.shape[1], sigma=sigma, learning_rate=learning_rate, topology=topology) # Initializing the SOM 
+    """Testing for determining the ratio of side lengths for the map [1] - doesn't seem correct right now"""
+    # cov  = np.cov(control_data)
+    # w, v = la.eig(cov)
+    # ranked = sorted(abs(w))
+    # ratio = ranked[-1]/ranked[-2]
+    # print(ratio)
     
-    #som.random_weights_init(control_data) # Initializes the weights of the SOM picking random samples from data.
-    som.train_batch(control_data, steps) # Trains the SOM using all the vectors in data sequentially.
+    #Initializing the first iteration of the SOM
+    som1 = MiniSom(x=msize[0], y=msize[1], input_len=control_data.shape[1], sigma=sigma, learning_rate=learning_rate, topology=topology) # Initializing the SOM 
+    som1.random_weights_init(control_data) # Initializes the weights of the SOM picking random samples from data.
+    som1.train(control_data, steps, use_epochs=True) 
     
-    return som
+    #Updated parameters for training/initializing:
+    learning_rate_new = learning_rate/10 #Wasn't sure exactly what was done with the learning rate 
+    sigma_new = max(sigma/4,1) #Drops to a quarter of original sigma, unless it is less than 1
+    steps2 = steps*4
+    
+    #Initializaing the second iterationof the SOM
+    som2 = MiniSom(x=msize[0], y=msize[1], input_len=control_data.shape[1], sigma=sigma_new, learning_rate=learning_rate_new, topology=topology)
+    som2._weights = som1._weights #Initializes with the weights from the first iteration 
+    som2.train(control_data,steps2, use_epochs=True)
+    
+    return som2
     
     """    
     Resources
@@ -113,7 +132,6 @@ def train_minisom(control_data, learning_rate=0.1, topology='hexagonal', normali
 Calculates Mean MDP scores for the given data and trained SOM.
 Parameters:
     data (numpy array): The input data for which Mean MDP scores are calculated.
-    controldata (numpy array): Data that the SOM was trained with -- only really needed if normalization is selected 
     som (MiniSom): The trained SOM.
     means (numpy array): The means used for normalization.
     std_devs (numpy array): The standard deviations used for normalization.
@@ -124,16 +142,18 @@ Returns:
 
 def calculate_MDP(data, controldata, som, normalize=True):
     
-    if normalize: #Denormalizing the SOM weight vectors based on the data that was used for training 
+    if normalize: #Denormalizing the SOM weight vectors 
         restruct = som._weights.reshape(som._weights.shape[0]*som._weights.shape[1],som._weights.shape[2]) #Reshaping to a 2D array 
         means = np.mean(controldata, axis=0, keepdims=True)
         std_devs = np.std(controldata, axis=0, ddof=0, keepdims=True) #Along each column 
         weight_array = restruct*std_devs + means
         weight_restruct = weight_array.reshape(som._weights.shape[0], som._weights.shape[1], som._weights.shape[2])
-        som._weights = weight_restruct #Reassigning the weight vectors 
+        som._weights = weight_restruct
+        print("Denormalized!")
     
     winners = np.array([som.winner(instance) for instance in data])  # Finds the best matching unit (BMU) for all time points in the data
     BMU = som._weights[winners[:, 0], winners[:, 1]]  # Collects the corresponding weight vectors for all BMUs
+    plt.show()
     deviation = np.linalg.norm(data - BMU, axis=1)  # Calculate Euclidean distances in the full dataset
     return deviation
 
