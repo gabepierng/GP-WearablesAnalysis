@@ -4,6 +4,7 @@ from tslearn.metrics import dtw_path
 from minisom import MiniSom
 import matplotlib.pyplot as plt
 import scipy.linalg as la
+import math
 
 '''
 Calculates the Gait Profile Score (GPS) as outlined by Baker et al. (https://pubmed.ncbi.nlm.nih.gov/19632117/)
@@ -92,35 +93,48 @@ def train_minisom(control_data, learning_rate=0.1, topology='hexagonal', normali
         control_data = mean_centered_array / std_devs
         
     # Parameters for training/initializing: 
-    dim = int(np.sqrt(5 * np.sqrt(control_data.shape[0]))) # Heuristic: # map units = 5*sqrt(n), where n is the number of training samples [1]
-    msize = (dim, dim)
-    #steps = 500 * (dim ** 2) # Number of iterations - Heuristic: 500 * number of network units [2] 
-    steps = int(10*(dim ** 2)/control_data.shape[0]) #Based on .trainlen = 10*m/n (m is # map units, n is the number of training samples)
+    dim = (5 * np.sqrt(control_data.shape[0])) # Heuristic: # map units = 5*sqrt(n), where n is the number of training samples [1]
+    print("Desired dimensions",dim)
+    cov  = np.cov(control_data.T)
+    w, v = la.eig(cov)
+    ranked = sorted(abs(w))
+    ratio = int(ranked[-1]/ranked[-2]) #Ratio between side lengths of the map
+    
+    #Solving for the dimensions of the map - (1) x*y = dim, (2) x/y = ratio -- solve the system of equations
+    y_sq = dim / ratio
+    y = np.sqrt(y_sq)
+    x = ratio*y
+    x = math.ceil(x) #Round up 
+    y = math.ceil(y)
+    msize = (x,y) #Map dimensions 
+    print("Map size:",msize)
+    print("Number of map units",x*y)
+    
+    #steps = 500 * (dim ** 2) # Number of iterations - previous heuristic: 500 * number of network units [2] 
+    steps = int(10*(x*y)/control_data.shape[0]) #Based on .trainlen = 10*m/n (m is # map units, n is the number of training samples)
     sigma = max(msize) / 4 # Sigma used: Heuristic: max(msize)/4 [1] 
     
-    """Testing for determining the ratio of side lengths for the map [1] - doesn't seem correct right now"""
-    # cov  = np.cov(control_data)
-    # w, v = la.eig(cov)
-    # ranked = sorted(abs(w))
-    # ratio = ranked[-1]/ranked[-2]
-    # print(ratio)
-    
-    #Initializing the first iteration of the SOM
+    #Initializing the SOM
     som1 = MiniSom(x=msize[0], y=msize[1], input_len=control_data.shape[1], sigma=sigma, learning_rate=learning_rate, topology=topology) # Initializing the SOM 
     som1.random_weights_init(control_data) # Initializes the weights of the SOM picking random samples from data.
     som1.train(control_data, steps, use_epochs=True) 
     
-    #Updated parameters for training/initializing:
-    learning_rate_new = learning_rate/10 #Wasn't sure exactly what was done with the learning rate 
+    learning_rate_new = learning_rate/10 # Reduce the learning rate on the next iteration 
     sigma_new = max(sigma/4,1) #Drops to a quarter of original sigma, unless it is less than 1
-    steps2 = steps*4
+    steps2 = steps*4 #Based on .trainlen = 40*m/n
     
-    #Initializaing the second iterationof the SOM
     som2 = MiniSom(x=msize[0], y=msize[1], input_len=control_data.shape[1], sigma=sigma_new, learning_rate=learning_rate_new, topology=topology)
     som2._weights = som1._weights #Initializes with the weights from the first iteration 
-    som2.train(control_data, steps2, use_epochs=True)
+    som2.train(control_data,steps2, use_epochs=True)
     
-    return som2 #Returns the som generated from the second iteration
+    #Option for visualizing the map
+    u_matrix = som2.distance_map().T
+    plt.figure(figsize=(10,10))
+    plt.pcolor(u_matrix, cmap= 'viridis' )
+    plt.colorbar()
+    plt.show()
+    
+    return som2
     
     """    
     Resources
