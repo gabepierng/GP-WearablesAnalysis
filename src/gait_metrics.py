@@ -93,12 +93,12 @@ def train_minisom(control_data, learning_rate=0.1, topology='hexagonal', normali
         control_data = mean_centered_array / std_devs
         
     # Parameters for training/initializing: 
-    dim = (5 * np.sqrt(control_data.shape[0])) # Heuristic: # map units = 5*sqrt(n), where n is the number of training samples [1]
+    dim = 5 * np.sqrt(control_data.shape[0]) # Heuristic: # map units = 5*sqrt(n), where n is the number of training samples [1]
     print("Desired dimensions",dim)
     cov  = np.cov(control_data.T)
     w, v = la.eig(cov)
     ranked = sorted(abs(w))
-    ratio = int(ranked[-1]/ranked[-2]) #Ratio between side lengths of the map
+    ratio = ranked[-1]/ranked[-2] #Ratio between side lengths of the map
     
     #Solving for the dimensions of the map - (1) x*y = dim, (2) x/y = ratio -- solve the system of equations
     y_sq = dim / ratio
