@@ -156,6 +156,7 @@ Returns:
 
 def calculate_MDP(data, controldata, som, normalize=True):
     
+    som_weights = som._weights
     if normalize: #Denormalizing the SOM weight vectors 
         restruct = som._weights.reshape(som._weights.shape[0]*som._weights.shape[1],som._weights.shape[2]) #Reshaping to a 2D array 
         means = np.mean(controldata, axis=0, keepdims=True)
@@ -168,6 +169,8 @@ def calculate_MDP(data, controldata, som, normalize=True):
     winners = np.array([som.winner(instance) for instance in data])  # Finds the best matching unit (BMU) for all time points in the data
     BMU = som._weights[winners[:, 0], winners[:, 1]]  # Collects the corresponding weight vectors for all BMUs
     deviation = np.linalg.norm(data - BMU, axis=1)  # Calculate Euclidean distances in the full dataset
-    return deviation
+    som._weights = som_weights #Returns the weights to what they were before 
+    
+    return deviation, BMU
 
 
