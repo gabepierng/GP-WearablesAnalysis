@@ -22,29 +22,50 @@ import csv
 
 XsensGaitParser =  excel_reader.XsensGaitDataParser()
 
-base_directory = "Q:\\gaitbfb_propellab\\Wearable Biofeedback System (REB-0448)\\Data\\Raw Data"
-run_time = datetime.datetime.now().strftime("%d-%m-%y_%H-%M")
-logging.basicConfig(filename=f'../log_files/{run_time}_ParticipantInfo.log',
-                    format = "%(asctime)s %(levelname)s %(message)s",
-                    level = logging.INFO)
+base_directory = "Q:\gaitbfb_propellab\Gait Quality Analysis\Data\Participant_Data\Raw Data\AB_BaselineWalking"
+# run_time = datetime.datetime.now().strftime("%d-%m-%y_%H-%M")
+# logging.basicConfig(filename=f'../log_files/{run_time}_ParticipantInfo.log',
+#                     format = "%(asctime)s %(levelname)s %(message)s",
+#                     level = logging.INFO)
 
-# Iterate through each subfolder in the base directory that starts with "LLPU"
+csv_file_path = "Q:\gaitbfb_propellab\Gait Quality Analysis\Data\Participant_Data\Raw Data\AB_BaselineWalking\participant_stats.csv"
+
+def reshape_vector(vectors_orig, new_size, num_axes=3):
+    x_new = np.linspace(0, 100, new_size)
+    trial_reshaped = []
+    for stride in vectors_orig:
+        x_orig = np.linspace(0, 100, len(stride))
+        func_cubic = [interp.interp1d(x_orig, stride[:, i], kind='cubic') for i in range(num_axes)]
+        vec_cubic = np.array([func_cubic[i](x_new) for i in range(num_axes)]).transpose()
+        trial_reshaped.append(vec_cubic)
+    return np.array(trial_reshaped)
+
+# Check if the CSV file exists, if not, create it and write headers
+if not os.path.exists(csv_file_path):
+    with open(csv_file_path, mode='w', newline='') as file:
+        writer = csv.writer(file)
+        writer.writerow(['Folder', 'Num Strides', 'Mean Symmetry', 'Stdev Symmetry', 
+                         'Upper 95% Symmetry', 'Lower 95% Symmetry', 'Min Symmetry', 'Max Symmetry'])
+
+
+# Iterate through each subfolder in the base directory that starts with "AB"
 for subfolder_name in os.listdir(base_directory):
-    if subfolder_name.startswith("LLPU_P11"):
-        llpu_folder_path = os.path.join(base_directory, subfolder_name)
+    if subfolder_name.startswith("AB"):
+        AB_folder_path = os.path.join(base_directory, subfolder_name)
 
-        # Look for the "Excel_Data_Trimmed" folder within each of the LLPU folders
-        excel_data_path = os.path.join(llpu_folder_path, "Excel_Data_Trimmed")
+        # Look for the "Excel_Data_Trimmed" folder within each of the AB folders
+        excel_data_path = os.path.join(AB_folder_path, "CSV")
         if os.path.isdir(excel_data_path):
             print(f"Processing folder: {excel_data_path}")
             
             part_strides = {}
             part_gait_params = {}
             part_kinematic_params = {}
-            trial_type = 'LLPU'
+            trial_type = 'AB'
 
-            
+            strides = 0
             for filename in os.listdir(excel_data_path):
+                #if filename.endswith('.csv') and filename.startswith('Baseline'):
                 if filename.endswith('.csv'):
                     xsens_path_file = os.path.join(excel_data_path, filename)
                     print(f"Processing file: {xsens_path_file}")
@@ -53,7 +74,7 @@ for subfolder_name in os.listdir(base_directory):
                         XsensGaitParser.process_mvn_trial_data(xsens_path_file)
                         partitioned_mvn_data = XsensGaitParser.get_partitioned_mvn_data()
                         gait_params = XsensGaitParser.get_gait_param_info()
-
+                        
                         # Aggregate all of the data for each participant 
                         if trial_type in part_strides:
                             for body_part in part_strides[trial_type]:
@@ -75,7 +96,7 @@ for subfolder_name in os.listdir(base_directory):
                     
                     except IndexError as e: #Exception based on an Index Error encountered in the excel_reader_gcp.py code -- still need to debug this **
                         print(f"Skipping file {xsens_path_file} due to error: {e}")
-                        logging.error(f"Skipping file {xsens_path_file} due to error: {e}")
+                        #logging.error(f"Skipping file {xsens_path_file} due to error: {e}")
                         continue
                     
             # Compute symmetry values
@@ -117,19 +138,35 @@ for subfolder_name in os.listdir(base_directory):
                 print('Upper 95% of the data: ', sorted(stance_time_symmetry)[round(0.95 * len(stance_time_symmetry))])
                 print('Lower 95% of the data: ', sorted(stance_time_symmetry)[round(0.05 * len(stance_time_symmetry))])
                 print() 
-                logging.info(f'Folder: {excel_data_path}')
-                logging.info(f'NumStrides: {len(stance_time_symmetry)}')
-                logging.info(f'MeanSymmetry: {round(np.mean(stance_time_symmetry),3)}')
-                logging.info(f'StdevSymmetry: {round(np.std(stance_time_symmetry),3)}')
-                logging.info(f'Upper95%Symmetry: {sorted(stance_time_symmetry)[round(0.95 * len(stance_time_symmetry),3)]}')
-                logging.info(f'Lower95%Symmetry: {sorted(stance_time_symmetry)[round(0.05 * len(stance_time_symmetry),3)]}')
-                logging.info(f'MINSymmetry: {round(np.min(stance_time_symmetry),3)}')
-                logging.info(f'MAXSymmetry: {round(np.max(stance_time_symmetry),3)}')
-                logging.info('--------------')
+                # logging.info(f'Folder: {excel_data_path}')
+                # logging.info(f'NumStrides: {len(stance_time_symmetry)}')
+                # logging.info(f'MeanSymmetry: {round(np.mean(stance_time_symmetry),3)}')
+                # logging.info(f'StdevSymmetry: {round(np.std(stance_time_symmetry),3)}')
+                # logging.info(f'Upper95%Symmetry: {sorted(stance_time_symmetry)[round(0.95 * len(stance_time_symmetry),3)]}')
+                # logging.info(f'Lower95%Symmetry: {sorted(stance_time_symmetry)[round(0.05 * len(stance_time_symmetry),3)]}')
+                # logging.info(f'MINSymmetry: {round(np.min(stance_time_symmetry),3)}')
+                # logging.info(f'MAXSymmetry: {round(np.max(stance_time_symmetry),3)}')
+                # logging.info('--------------')
                 
+                print(strides)  
+                
+                with open(csv_file_path, mode='a', newline='') as file:
+                    writer = csv.writer(file)
+                    writer.writerow([
+                        excel_data_path,
+                        len(stance_time_symmetry),
+                        round(np.mean(stance_time_symmetry), 3),
+                        round(np.std(stance_time_symmetry), 3),
+                        sorted(stance_time_symmetry)[round(0.95 * len(stance_time_symmetry))],
+                        sorted(stance_time_symmetry)[round(0.05 * len(stance_time_symmetry))],
+                        round(np.min(stance_time_symmetry), 3),
+                        round(np.max(stance_time_symmetry), 3)
+                    ])
+                    
+              
             else:
                 print(f"No data found for trial type '{trial_type}' in folder {excel_data_path}")
         else:
-            print(f"Folder 'Excel_Data_Trimmed' not found in {llpu_folder_path}")
+            print(f"Folder 'Excel_Data_Trimmed' not found in {AB_folder_path}")
             
             

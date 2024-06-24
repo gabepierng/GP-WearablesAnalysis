@@ -632,7 +632,6 @@ class XsensGaitDataParser:
         # if not control_data:
         #     print('Parsed excel file \'%s\'...' % (mvn_csv_filename))
         sensors = get_default_sensor_index()        # get sensors from MVN data
-
         pelvis_euler_orientation = self.get_pelvis_euler_orientation()
         sternum_euler_orientation = self.get_sternum_euler_orientation()
         hip_angles = self.get_hip_angles()
@@ -655,7 +654,7 @@ class XsensGaitDataParser:
         # print(pelvis_position.shape)
         foot_position = self.get_foot_position()
         # takes into account X and Y to deal with orientation drift over time. If single pass, can typically set close to 1.0 to eliminate start/stop
-        range_to_keep = 0.98
+        range_to_keep = 1
 
         startInd = np.argmin(pelvis_position[:,0])
         endInd = np.argmax(pelvis_position[:,0])
@@ -758,7 +757,7 @@ class XsensGaitDataParser:
         
         # specific participant occasionally knocked left thigh-sensor mid-trial. This filters out those strides
         if('/MI' in mvn_csv_filename):
-            partitioned_mvn_data['gyro_data'][5] = [stride for stride in self.partitioned_mvn_data['gyro_data'][5] if np.max(stride[:,1]) - np.min(stride[:,1]) < 4.5]
+            self.partitioned_mvn_data['gyro_data'][5] = [stride for stride in self.partitioned_mvn_data['gyro_data'][5] if np.max(stride[:,1]) - np.min(stride[:,1]) < 4.5]
         
         # print('Calculating spatiotemporal parameters...')
         self.gait_params['spatio_temp'] = self.calc_spatio_temp_params(self.gait_events, pelvis_position, foot_position, frame_rate, knee_angles, hip_angles)
