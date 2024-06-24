@@ -74,6 +74,7 @@ def finding_groupings(num_groups, gait_parameter, gait_cycles, percent_grading, 
     return groups, grouped_gait_cycles, percent_grading            
 
 def random_sampling(groups, grouped_gait_cycles, sample_size=50):
+    
     def adaptive_subsample(group, first_mean, i, percent_grading=0.03, tolerance=0.003, sample_size=50, max_iterations=10000):
         available_indices = list(range(len(group)))  # Make a list that spans all the indices
         sample_indices = np.random.choice(available_indices, size=sample_size, replace=False)
@@ -204,24 +205,27 @@ bucket_name = 'gaitbfb_propellab'
 blobs = storage_client.list_blobs(bucket_name, prefix = base_directory)
 prefix_from_bucket = 'Wearable Biofeedback System (REB-0448)/Data/Raw Data/' 
 participant_list = ['LLPU_P01','LLPU_P02','LLPU_P03','LLPU_P04','LLPU_P05','LLPU_P06','LLPU_P08','LLPU_P09','LLPU_P10','LLPU_P12','LLPU_P14','LLPU_P15']
+arrangements = ['pelvis','upper','lower']
 
 for participant in participant_list:
+    print(f"Processing participant {participant}")
+    
     directory = prefix_from_bucket + participant + '/Excel_Data_Trimmed'
     blobs = storage_client.list_blobs(bucket_or_name=bucket_name, prefix=directory.replace("\\", "/"))
-    
     part_strides = {}
     part_gait_params = {}
     part_kinematic_params = {}
-    part_sensor_data = []
     
+    part_pelvis_data = []
+    part_upper_data = []
+    part_lower_data = []
+    
+    trial_type = 'LLPU'
     part_strides_baseline = {}
     part_gait_params_baseline = {}
     part_kinematic_params_baseline = {}
     part_sensor_data_baseline = []
-                
 
-    trial_type = 'LLPU'
-    arrangement = 'pelvis' #Alternatively, can use upper (UpperL + UpperR) or lower (LowerL + LowerR) (changes how many signals are added)
     logging.info(f"Processing participant {participant}")
     
     if blobs:
@@ -242,17 +246,20 @@ for participant in participant_list:
                     upper_data = np.concatenate((combined_signals['UpperR'], combined_signals['LowerR']), axis=2)  # Concatenate by last axis
                     lower_data = np.concatenate((combined_signals['UpperL'], combined_signals['LowerL']), axis=2)  # Concatenate by last axis
                     
-                    if arrangement == 'pelvis':
-                        part_sensor_data.append(pelvis_data)
-                    elif arrangement == 'upper':
-                        part_sensor_data.append(upper_data)
-                    elif arrangement == 'lower':
-                        part_sensor_data.append(lower_data)
-                    else:
-                        print("Not a valid sensor arrangement")
-                        break
+                    for arrangement in arrangements:
+                        if arrangement == 'pelvis':
+                            part_pelvis_data.append(pelvis_data)
+                        elif arrangement == 'upper':
+                            part_upper_data.append(upper_data)
+                        elif arrangement == 'lower':
+                            part_lower_data.append(lower_data)
+                        else:
+                            print("Not a valid sensor arrangement")
+                            break
                     
                     partitioned_mvn_data = XsensGaitParser.get_partitioned_mvn_data()
+                    knee_angle = partitioned_mvn_data['knee_angle']
+                    knee_angle_R = knee_angle[0]
                     trial_type = 'LLPU'
                     
                     if trial_type in part_strides:
@@ -276,64 +283,82 @@ for participant in participant_list:
                     
                     #Targeting specifically the baseline trials to figure out which of the groupings will correspond to baseline 
                     if file_name.startswith('Baseline'):
+                        
                         XsensGaitParser.process_mvn_trial_data(f"gs://{bucket_name}/{blob.name}")
-                        partitioned_mvn_data = XsensGaitParser.get_partitioned_mvn_data()
-                        gait_params = XsensGaitParser.get_gait_param_info()
+                        partitioned_mvn_data_baseline = XsensGaitParser.get_partitioned_mvn_data()
+                        gait_params_baseline = XsensGaitParser.get_gait_param_info()
                         trial_type = 'LLPU'
+                        
                         if trial_type in part_strides_baseline:
                             for body_part in part_strides_baseline[trial_type]:
                                 for i, side in enumerate(part_strides_baseline[trial_type][body_part]):
                                     # for each part (pelvis, l_hip, r_knee, etc.), append strides to appropriate list
-                                    part_strides_baseline[trial_type][body_part][i] = part_strides_baseline[trial_type][body_part][i] + partitioned_mvn_data[body_part][i]
+                                    part_strides_baseline[trial_type][body_part][i] = part_strides_baseline[trial_type][body_part][i] + partitioned_mvn_data_baseline[body_part][i]
 
                             part_gait_params_baseline[trial_type].append(gait_params['spatio_temp'])
 
                             for joint in part_kinematic_params_baseline[trial_type]:
                                 for i, side in enumerate(part_kinematic_params_baseline[trial_type][joint]):
-                                    part_kinematic_params_baseline[trial_type][joint][i] = np.append(part_kinematic_params_baseline[trial_type][joint][i], gait_params['kinematics'][joint][i], axis=0) 
-
+                                    part_kinematic_params_baseline[trial_type][joint][i] = np.append(part_kinematic_params_baseline[trial_type][joint][i], gait_params_baseline['kinematics'][joint][i], axis=0) 
                         else:
                             part_strides_baseline[trial_type] = partitioned_mvn_data
                             part_gait_params_baseline[trial_type] = [gait_params['spatio_temp']]
                             part_kinematic_params_baseline[trial_type] = gait_params['kinematics']
-                        
-                except IndexError as e: #Exception based on an Index Error encountered in excel_reader_gcp.py *
+                
+                except IndexError as e: #Exception based on an Index Error encountered in excel_reader_gcp.py **
                     #print(f"File skipped: gs://{bucket_name}/{blob.name} due to error: {e}")
-                    continue
-                            
+                    continue           
+        
+    part_sensor_data = [part_pelvis_data, part_upper_data, part_lower_data]                        
+    
     if trial_type in part_gait_params:
+        
         stance_time_symmetry = [item for sublist in [i[12] for i in part_gait_params[trial_type]] for item in sublist]
-        flattened_raw_sensor = []
-        for sublist in part_sensor_data:
-            for item in sublist:
-                flattened_raw_sensor.append(item) #Flatten to individual gait cycles 
-
-    print(np.mean(stance_time_symmetry))
-    
-    if trial_type in part_gait_params_baseline:
         stance_time_symmetry_baseline = [item for sublist in [i[12] for i in part_gait_params_baseline[trial_type]] for item in sublist]
-    stance_time_symmetry_baseline_mean = np.mean(stance_time_symmetry_baseline)
-    print(np.mean(stance_time_symmetry_baseline))
-
-    groups, gaitcycles = check_group_configurations(stance_time_symmetry, flattened_raw_sensor)
-
-    group_means = [np.mean(group) for group in groups]
-    
-    #Determining which group will be baseline based on which end is closer to the mean of the baseline stance time symmetry scores 
-    first_group_diff = abs(group_means[0] - stance_time_symmetry_baseline_mean)
-    last_group_diff = abs(group_means[-1] - stance_time_symmetry_baseline_mean)
-
-    # Determine the order of the groups
-    if first_group_diff <= last_group_diff:
-        ordered_groups = groups  # Retain the order
-        ordered_gaitcycles = gaitcycles
-    else:
-        ordered_groups = groups[::-1]  # Reverse the order    
-        ordered_gaitcycles = gaitcycles[::-1]
+        stance_time_symmetry_baseline_mean = np.mean(stance_time_symmetry_baseline)
+        print(len(stance_time_symmetry))
         
-    for i, group in enumerate(ordered_groups):
-        print(f"Group {i+1}: {len(group)} (Mean: {np.mean(group) if group else 'N/A'})")
-        percentdiff = (np.mean(group)-np.mean(ordered_groups[0]))/np.mean(ordered_groups[0])*100
-        print(f"Percent diff between groups = {round(percentdiff,3)}")
-        
-    
+        for i in range(len(part_sensor_data)):
+            print(f"Processing sensor data {arrangements[i]}")
+            sensor_arr = part_sensor_data[i]
+            flattened_raw_sensor = []
+            for sublist in sensor_arr:
+                for item in sublist:
+                    flattened_raw_sensor.append(item) #Flatten to individual gait cycles 
+            
+            groups, gaitcycles = check_group_configurations(stance_time_symmetry, flattened_raw_sensor)
+            group_means = [np.mean(group) for group in groups]
+            
+            #Determining which group will be baseline based on which end is closer to the mean of the baseline stance time symmetry scores 
+            first_group_diff = abs(group_means[0] - stance_time_symmetry_baseline_mean)
+            last_group_diff = abs(group_means[-1] - stance_time_symmetry_baseline_mean)
+
+            # Determine the order of the groups
+            if first_group_diff <= last_group_diff:
+                ordered_groups = groups  # Retain the order
+                ordered_gaitcycles = gaitcycles
+            else:
+                ordered_groups = groups[::-1]  # Reverse the order    
+                ordered_gaitcycles = gaitcycles[::-1]
+            
+            print(np.shape(ordered_gaitcycles[0][0]))
+                
+            for i, group in enumerate(ordered_groups):
+                print(f"Group {i+1}: {len(group)} (Mean: {np.mean(group) if group else 'N/A'})")
+                percentdiff = (np.mean(group)-np.mean(ordered_groups[0]))/np.mean(ordered_groups[0])*100
+                    #print(f"Percent diff between groups = {round(percentdiff,3)}")
+                
+            #Implementation for DTW
+            print("Testing dynamic time warping")
+            dtw_mean_distances = []
+            #Computing the within group distance for baseline
+            dtw_within = tslearn_dtw_analysis(set1 = ordered_gaitcycles[0], set2=None)
+            dtw_mean_distances.append(dtw_within)
+            
+            for i in range(1, len(ordered_gaitcycles)):
+                dtw_between = tslearn_dtw_analysis(set1 = ordered_gaitcycles[0], set2=ordered_gaitcycles[i])
+                dtw_mean_distances.append(dtw_between)
+                
+            print(dtw_mean_distances)    
+            
+            
