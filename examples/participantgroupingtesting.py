@@ -40,6 +40,7 @@ def organize_signals(sensor_mappings, gyro_signal, accel_signal):
     return combined_signals
 
 def finding_groupings(num_groups, gait_parameter, gait_cycles, percent_grading, reverse=True):
+    
     if reverse:
         percent_grading = -percent_grading
         values_sorted = sorted(gait_parameter, reverse=True)
@@ -71,7 +72,7 @@ def finding_groupings(num_groups, gait_parameter, gait_cycles, percent_grading, 
     return groups, grouped_gait_cycles, percent_grading            
 
 def random_sampling(groups, grouped_gait_cycles, sample_size=50):
-    def adaptive_subsample(group, first_mean, i, percent_grading=0.03, tolerance=0.002, sample_size=50, max_iterations=10000):
+    def adaptive_subsample(group, first_mean, i, percent_grading=0.03, tolerance=0.003, sample_size=50, max_iterations=10000):
         available_indices = list(range(len(group)))  # Make a list that spans all the indices
         sample_indices = np.random.choice(available_indices, size=sample_size, replace=False)
         
@@ -83,36 +84,61 @@ def random_sampling(groups, grouped_gait_cycles, sample_size=50):
             percent_diff = (current_mean - first_mean) / first_mean
             target_diff = percent_grading * i
 
+            if len(available_indices) == 0:
+                raise ValueError("No candidates available to adjust the mean")
+            
             if (target_diff - tolerance) <= abs(percent_diff) <= (target_diff + tolerance):
                 return sample_indices
 
-            if len(available_indices) == 0:
-                raise ValueError("No candidates available to adjust the mean")
-
-            if abs(percent_diff) < (target_diff - tolerance):
+            elif abs(percent_diff) < (target_diff - tolerance):
                 if percent_diff < 0:
                     # Choose a new sample from the lower half
-                    new_idx = np.random.choice([idx for idx in available_indices if group[idx] <= np.percentile(group, 50)])
-                    sample_indices = np.append(sample_indices, new_idx)
+                    lower_idx = [idx for idx in available_indices if group[idx] <= np.percentile(group, 50)]
+                    
+                    if lower_idx:
+                        new_idx = np.random.choice(lower_idx)
+                        sample_indices = np.append(sample_indices, new_idx)
+                    else:
+                        new_idx = np.random.choice(available_indices)
+                        sample_indices = np.append(sample_indices, new_idx)
+                    
                     available_indices.remove(new_idx)
                     sample_indices = np.delete(sample_indices, np.argmax([group[idx] for idx in sample_indices]))
                 else:
                     # Choose a new sample from the upper half
-                    new_idx = np.random.choice([idx for idx in available_indices if group[idx] >= np.percentile(group, 50)])
-                    sample_indices = np.append(sample_indices, new_idx)
+                    higher_idx = [idx for idx in available_indices if group[idx] >= np.percentile(group, 50)]
+                    if higher_idx:
+                        new_idx = np.random.choice(higher_idx)
+                        sample_indices = np.append(sample_indices, new_idx)
+                    else:
+                        new_idx = np.random.choice(available_indices)
+                        sample_indices = np.append(sample_indices, new_idx)
+                    
                     available_indices.remove(new_idx)
                     sample_indices = np.delete(sample_indices, np.argmin([group[idx] for idx in sample_indices]))
             else:
                 if percent_diff > 0:
-                    # Choose a new sample from the lower half
-                    new_idx = np.random.choice([idx for idx in available_indices if group[idx] <= np.percentile(group, 50)])
-                    sample_indices = np.append(sample_indices, new_idx)
+                    lower_idx = [idx for idx in available_indices if group[idx] <= np.percentile(group, 50)]
+                    
+                    if lower_idx:
+                        new_idx = np.random.choice(lower_idx)
+                        sample_indices = np.append(sample_indices, new_idx)
+                    else:
+                        new_idx = np.random.choice(available_indices)
+                        sample_indices = np.append(sample_indices, new_idx)
                     available_indices.remove(new_idx)
                     sample_indices = np.delete(sample_indices, np.argmax([group[idx] for idx in sample_indices]))
                 else:
                     # Choose a new sample from the upper half
-                    new_idx = np.random.choice([idx for idx in available_indices if group[idx] >= np.percentile(group, 50)])
-                    sample_indices = np.append(sample_indices, new_idx)
+                    higher_idx = [idx for idx in available_indices if group[idx] >= np.percentile(group, 50)]
+                    
+                    if higher_idx:
+                        new_idx = np.random.choice(lower_idx)
+                        sample_indices = np.append(sample_indices, new_idx)
+                    else:
+                        new_idx = np.random.choice(available_indices)
+                        sample_indices = np.append(sample_indices, new_idx)
+                    
                     available_indices.remove(new_idx)
                     sample_indices = np.delete(sample_indices, np.argmin([group[idx] for idx in sample_indices]))
 
@@ -134,14 +160,12 @@ def random_sampling(groups, grouped_gait_cycles, sample_size=50):
         sample_indices = adaptive_subsample(np.array(groups[i]), group1_mean, i)
         subsampled_values = [groups[i][j] for j in sample_indices]
         subsampled_gait_cycles = [grouped_gait_cycles[i][j] for j in sample_indices]
-        
         groups_subsampled_list.append(subsampled_values)
         gaitcycles_subsampled_list.append(subsampled_gait_cycles)
     
     return groups_subsampled_list, gaitcycles_subsampled_list
 
 def check_group_configurations(gait_split_parameter, raw_sensor_data):
-    
     groups, grouped_gait_cycles, grading = finding_groupings(4, gait_split_parameter, raw_sensor_data, 0.03, reverse=False)
     
     filtered_groups = []
@@ -177,11 +201,6 @@ bucket_name = 'gaitbfb_propellab'
 blobs = storage_client.list_blobs(bucket_name, prefix = base_directory)
 prefix_from_bucket = 'Wearable Biofeedback System (REB-0448)/Data/Raw Data/' 
 participant_list = ['LLPU_P01','LLPU_P02','LLPU_P03','LLPU_P04','LLPU_P05','LLPU_P06','LLPU_P08','LLPU_P09','LLPU_P10','LLPU_P12','LLPU_P14','LLPU_P15']
-
-run_time = datetime.datetime.now().strftime("%d-%m-%y_%H-%M")     
-logging.basicConfig(filename=f'C:\Personal_Repo/{run_time}_participant.log',
-                    format = "%(asctime)s %(levelname)s %(message)s",
-                    level = logging.INFO)
 
 
 for participant in participant_list:
