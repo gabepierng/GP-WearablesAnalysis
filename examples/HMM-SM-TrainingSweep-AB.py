@@ -290,7 +290,7 @@ sensor_combos = [['Pelvis'],
                 ]
 
 # parameters to use for the HMM model training. Number of gait cycles to concatenate (along time axis), HMM states, iterations, and training tolerance
-strides_to_concat = 4
+strides_to_concat = 10
 num_states=3 #Changed from 5 to 2
 train_iterations = 300 
 train_tolerance = 1e-2

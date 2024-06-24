@@ -107,6 +107,7 @@ def random_sampling(groups, grouped_gait_cycles, sample_size=50):
                 else:
                     # Choose a new sample from the upper half
                     higher_idx = [idx for idx in available_indices if group[idx] >= np.percentile(group, 50)]
+                    
                     if higher_idx:
                         new_idx = np.random.choice(higher_idx)
                         sample_indices = np.append(sample_indices, new_idx)
@@ -126,6 +127,7 @@ def random_sampling(groups, grouped_gait_cycles, sample_size=50):
                     else:
                         new_idx = np.random.choice(available_indices)
                         sample_indices = np.append(sample_indices, new_idx)
+                    
                     available_indices.remove(new_idx)
                     sample_indices = np.delete(sample_indices, np.argmax([group[idx] for idx in sample_indices]))
                 else:
@@ -192,8 +194,7 @@ def check_group_configurations(gait_split_parameter, raw_sensor_data):
     groups, gaitcycles = random_sampling(filtered_groups, filtered_gait_groups)
     
     return groups, gaitcycles
-
-    
+   
 # Specify the bucket name and base directory within the bucket
 bucket_name = 'gaitbfb_propellab/'
 base_directory = bucket_name + 'Wearable Biofeedback System (REB-0448)/Data/Raw Data'
@@ -201,7 +202,6 @@ bucket_name = 'gaitbfb_propellab'
 blobs = storage_client.list_blobs(bucket_name, prefix = base_directory)
 prefix_from_bucket = 'Wearable Biofeedback System (REB-0448)/Data/Raw Data/' 
 participant_list = ['LLPU_P01','LLPU_P02','LLPU_P03','LLPU_P04','LLPU_P05','LLPU_P06','LLPU_P08','LLPU_P09','LLPU_P10','LLPU_P12','LLPU_P14','LLPU_P15']
-
 
 for participant in participant_list:
     directory = prefix_from_bucket + participant + '/Excel_Data_Trimmed'
