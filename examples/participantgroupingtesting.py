@@ -10,6 +10,7 @@ import gait_metrics as gait_metrics
 from gait_metrics import *
 import datetime
 import logging   
+import csv
 
 sensor_mappings = {
     'pelvis': 1,
@@ -21,6 +22,18 @@ sensor_mappings = {
 
 XsensGaitParser =  excel_reader.XsensGaitDataParser()
 storage_client = storage.Client()
+run_time = datetime.datetime.now().strftime("%d-%m-%y_%H-%M")
+
+script_dir = os.path.dirname(__file__)
+current_datetime = datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
+csv_filename = f"logresults_{run_time}.csv" #Builds a log file based on the current time to keep track of runs
+csv_path = os.path.join(script_dir, csv_filename)
+
+# Function to add a row of data to the CSV file
+def add_row_to_csv(csv_path, sensor_config, gait_param, algorithm, participant_num, level, parameter):
+    with open(csv_path, mode='a', newline='') as file:
+        writer = csv.writer(file)
+        writer.writerow([csv_path, sensor_config, gait_param, algorithm, participant_num, level, parameter])
 
 def reshape_vector(vectors_orig, new_size, num_axes=3):
     x_new = np.linspace(0, 100, new_size)
@@ -341,10 +354,10 @@ for participant in participant_list:
                 ordered_groups = groups[::-1]  # Reverse the order    
                 ordered_gaitcycles = gaitcycles[::-1]
             
-            print(np.shape(ordered_gaitcycles[0][0]))
+            #print(np.shape(ordered_gaitcycles[0][0]))
                 
-            for i, group in enumerate(ordered_groups):
-                print(f"Group {i+1}: {len(group)} (Mean: {np.mean(group) if group else 'N/A'})")
+            for k, group in enumerate(ordered_groups):
+                #print(f"Group {i+1}: {len(group)} (Mean: {np.mean(group) if group else 'N/A'})")
                 percentdiff = (np.mean(group)-np.mean(ordered_groups[0]))/np.mean(ordered_groups[0])*100
                     #print(f"Percent diff between groups = {round(percentdiff,3)}")
                 
@@ -354,11 +367,37 @@ for participant in participant_list:
             #Computing the within group distance for baseline
             dtw_within = tslearn_dtw_analysis(set1 = ordered_gaitcycles[0], set2=None)
             dtw_mean_distances.append(dtw_within)
+            add_row_to_csv(csv_path, arrangements[i],'STSR', 'DTW',participant,np.mean(ordered_groups[0]),dtw_within)
             
-            for i in range(1, len(ordered_gaitcycles)):
-                dtw_between = tslearn_dtw_analysis(set1 = ordered_gaitcycles[0], set2=ordered_gaitcycles[i])
+            for j in range(1, len(ordered_gaitcycles)):
+                dtw_between = tslearn_dtw_analysis(set1 = ordered_gaitcycles[0], set2=ordered_gaitcycles[j]) # type: ignore
                 dtw_mean_distances.append(dtw_between)
+                add_row_to_csv(csv_path, arrangements[i],'STSR', 'DTW',participant,np.mean(ordered_groups[j]), dtw_between)
                 
             print(dtw_mean_distances)    
             
+            #Implementation for SOM
+            from sklearn.model_selection import train_test_split
+
+            # Shuffle and split the list
+            train_arrays, test_arrays = train_test_split(ordered_gaitcycles[0], test_size=0.2, random_state=42)
+
+            # Concatenate arrays for training and testing
+            train_data = np.concatenate(train_arrays, axis=0)
+            test_data = np.concatenate(test_arrays, axis=0)
+
+            print("Training Data Shape:", train_data.shape)
+            print("Testing Data Shape:", test_data.shape)
+            
+            print("Training the SOM on baseline data")
+            trained_SOM = train_minisom(train_data, learning_rate=0.1, topology='hexagonal', normalize=True)
+            test_baseline = calculate_MDP(test_data, train_data, trained_SOM, normalize=True)
+            add_row_to_csv(csv_path, arrangements[i],'STSR', 'MDP',participant,np.mean(ordered_groups[0]), np.mean(test_baseline))
+            
+            for j in range(1, len(ordered_gaitcycles)):
+                train_arrays, test_arrays = train_test_split(ordered_gaitcycles[j], test_size=0.2, random_state=42)
+                test_data_upperlevels = np.concatenate(test_arrays, axis=0)
+                test_upperlevels = calculate_MDP(test_data_upperlevels, train_data, trained_SOM, normalize=True)
+                add_row_to_csv(csv_path, arrangements[i],'STSR','MDP',participant, np.mean(ordered_groups[j]), np.mean(test_upperlevels))
+                
             
