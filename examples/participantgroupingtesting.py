@@ -1,4 +1,6 @@
 from google.cloud import storage
+import scipy
+from scipy import signal
 from scipy.signal import find_peaks
 import numpy as np
 import os
@@ -11,7 +13,10 @@ from gait_metrics import *
 import datetime
 import logging   
 import csv
+import matplotlib.pyplot as plt
+from hmmlearn import hmm
 
+#Dictionary to map the sensor locations to their IDs.
 sensor_mappings = {
     'pelvis': 1,
     'UpperR': 2,
@@ -20,6 +25,7 @@ sensor_mappings = {
     'LowerL': 6
 }
 
+b20, a20 = scipy.signal.butter(N=4, Wn = 0.8, btype = 'lowpass')  # Wn = 0.8 = 40 / Nyquist F = 50Hz
 XsensGaitParser =  excel_reader.XsensGaitDataParser()
 storage_client = storage.Client()
 run_time = datetime.datetime.now().strftime("%d-%m-%y_%H-%M")
@@ -55,7 +61,6 @@ def organize_signals(sensor_mappings, gyro_signal, accel_signal):
     return combined_signals
 
 def finding_groupings(num_groups, gait_parameter, gait_cycles, percent_grading, reverse=True):
-    
     if reverse:
         percent_grading = -percent_grading
         values_sorted = sorted(gait_parameter, reverse=True)
@@ -87,14 +92,12 @@ def finding_groupings(num_groups, gait_parameter, gait_cycles, percent_grading, 
     return groups, grouped_gait_cycles, percent_grading            
 
 def random_sampling(groups, grouped_gait_cycles, sample_size=50):
-    
     def adaptive_subsample(group, first_mean, i, percent_grading=0.03, tolerance=0.003, sample_size=50, max_iterations=10000):
         available_indices = list(range(len(group)))  # Make a list that spans all the indices
         sample_indices = np.random.choice(available_indices, size=sample_size, replace=False)
         
         for idx in sample_indices:
             available_indices.remove(idx)  # Remove initial sample values from available values
-
         for _ in range(max_iterations):
             current_mean = np.mean([group[idx] for idx in sample_indices])
             percent_diff = (current_mean - first_mean) / first_mean
@@ -102,10 +105,8 @@ def random_sampling(groups, grouped_gait_cycles, sample_size=50):
 
             if len(available_indices) == 0:
                 raise ValueError("No candidates available to adjust the mean")
-            
             if (target_diff - tolerance) <= abs(percent_diff) <= (target_diff + tolerance):
                 return sample_indices
-
             elif abs(percent_diff) < (target_diff - tolerance):
                 if percent_diff < 0:
                     # Choose a new sample from the lower half
@@ -123,40 +124,34 @@ def random_sampling(groups, grouped_gait_cycles, sample_size=50):
                 else:
                     # Choose a new sample from the upper half
                     higher_idx = [idx for idx in available_indices if group[idx] >= np.percentile(group, 50)]
-                    
                     if higher_idx:
                         new_idx = np.random.choice(higher_idx)
                         sample_indices = np.append(sample_indices, new_idx)
                     else:
                         new_idx = np.random.choice(available_indices)
                         sample_indices = np.append(sample_indices, new_idx)
-                    
                     available_indices.remove(new_idx)
                     sample_indices = np.delete(sample_indices, np.argmin([group[idx] for idx in sample_indices]))
             else:
                 if percent_diff > 0:
                     lower_idx = [idx for idx in available_indices if group[idx] <= np.percentile(group, 50)]
-                    
                     if lower_idx:
                         new_idx = np.random.choice(lower_idx)
                         sample_indices = np.append(sample_indices, new_idx)
                     else:
                         new_idx = np.random.choice(available_indices)
                         sample_indices = np.append(sample_indices, new_idx)
-                    
                     available_indices.remove(new_idx)
                     sample_indices = np.delete(sample_indices, np.argmax([group[idx] for idx in sample_indices]))
                 else:
                     # Choose a new sample from the upper half
                     higher_idx = [idx for idx in available_indices if group[idx] >= np.percentile(group, 50)]
-                    
                     if higher_idx:
                         new_idx = np.random.choice(lower_idx)
                         sample_indices = np.append(sample_indices, new_idx)
                     else:
                         new_idx = np.random.choice(available_indices)
                         sample_indices = np.append(sample_indices, new_idx)
-                    
                     available_indices.remove(new_idx)
                     sample_indices = np.delete(sample_indices, np.argmin([group[idx] for idx in sample_indices]))
 
@@ -168,7 +163,6 @@ def random_sampling(groups, grouped_gait_cycles, sample_size=50):
     
     subsampled_values = [groups[0][j] for j in sample_indices_first_group]
     subsampled_gait_cycles = [grouped_gait_cycles[0][j] for j in sample_indices_first_group]
-    
     groups_subsampled_list = []
     gaitcycles_subsampled_list = []
     groups_subsampled_list.append(subsampled_values)
@@ -232,13 +226,14 @@ for participant in participant_list:
     part_pelvis_data = []
     part_upper_data = []
     part_lower_data = []
+    part_raw_sensor = []
     
     trial_type = 'LLPU'
     part_strides_baseline = {}
     part_gait_params_baseline = {}
     part_kinematic_params_baseline = {}
     part_sensor_data_baseline = []
-
+    
     logging.info(f"Processing participant {participant}")
     
     if blobs:
@@ -254,21 +249,12 @@ for participant in participant_list:
                     accel_signal = partitioned_mvn_data['acc_data']
                     
                     combined_signals = organize_signals(sensor_mappings, partitioned_mvn_data['gyro_data'], partitioned_mvn_data['acc_data'])
-                    
                     pelvis_data = combined_signals['pelvis']
-                    upper_data = np.concatenate((combined_signals['UpperR'], combined_signals['LowerR']), axis=2)  # Concatenate by last axis
-                    lower_data = np.concatenate((combined_signals['UpperL'], combined_signals['LowerL']), axis=2)  # Concatenate by last axis
+                    upper_data = np.concatenate((combined_signals['UpperR'], combined_signals['UpperL']), axis=2)  # Concatenate by last axis
+                    lower_data = np.concatenate((combined_signals['LowerR'], combined_signals['LowerL']), axis=2)  # Concatenate by last axis
                     
-                    for arrangement in arrangements:
-                        if arrangement == 'pelvis':
-                            part_pelvis_data.append(pelvis_data)
-                        elif arrangement == 'upper':
-                            part_upper_data.append(upper_data)
-                        elif arrangement == 'lower':
-                            part_lower_data.append(lower_data)
-                        else:
-                            print("Not a valid sensor arrangement")
-                            break
+                    full_sensors = np.concatenate((pelvis_data,upper_data,lower_data),axis=2)
+                    part_raw_sensor.append(full_sensors)
                     
                     partitioned_mvn_data = XsensGaitParser.get_partitioned_mvn_data()
                     knee_angle = partitioned_mvn_data['knee_angle']
@@ -320,9 +306,7 @@ for participant in participant_list:
                 
                 except IndexError as e: #Exception based on an Index Error encountered in excel_reader_gcp.py **
                     #print(f"File skipped: gs://{bucket_name}/{blob.name} due to error: {e}")
-                    continue           
-        
-    part_sensor_data = [part_pelvis_data, part_upper_data, part_lower_data]                        
+                    continue                              
     
     if trial_type in part_gait_params:
         
@@ -331,73 +315,203 @@ for participant in participant_list:
         stance_time_symmetry_baseline_mean = np.mean(stance_time_symmetry_baseline)
         print(len(stance_time_symmetry))
         
-        for i in range(len(part_sensor_data)):
-            print(f"Processing sensor data {arrangements[i]}")
-            sensor_arr = part_sensor_data[i]
-            flattened_raw_sensor = []
-            for sublist in sensor_arr:
-                for item in sublist:
-                    flattened_raw_sensor.append(item) #Flatten to individual gait cycles 
-            
-            groups, gaitcycles = check_group_configurations(stance_time_symmetry, flattened_raw_sensor)
-            group_means = [np.mean(group) for group in groups]
-            
-            #Determining which group will be baseline based on which end is closer to the mean of the baseline stance time symmetry scores 
-            first_group_diff = abs(group_means[0] - stance_time_symmetry_baseline_mean)
-            last_group_diff = abs(group_means[-1] - stance_time_symmetry_baseline_mean)
+        flattened_raw_sensor = []
+        for sublist in part_raw_sensor:
+            for item in sublist:
+                flattened_raw_sensor.append(item) #Flatten to individual gait cycles 
+        
+        print(len(flattened_raw_sensor))
+        
+        groups, gaitcycles = check_group_configurations(stance_time_symmetry, flattened_raw_sensor)
+        group_means = [np.mean(group) for group in groups]
+        
+        #Determining which group will be baseline based on which end is closer to the mean of the baseline stance time symmetry scores 
+        first_group_diff = abs(group_means[0] - stance_time_symmetry_baseline_mean)
+        last_group_diff = abs(group_means[-1] - stance_time_symmetry_baseline_mean)
 
-            # Determine the order of the groups
-            if first_group_diff <= last_group_diff:
-                ordered_groups = groups  # Retain the order
-                ordered_gaitcycles = gaitcycles
-            else:
-                ordered_groups = groups[::-1]  # Reverse the order    
-                ordered_gaitcycles = gaitcycles[::-1]
+        # Determine the order of the groups
+        if first_group_diff <= last_group_diff:
+            ordered_groups = groups  # Retain the order
+            ordered_gaitcycles = gaitcycles
+            ordered_group_means = group_means
+        else:
+            ordered_groups = groups[::-1]  # Reverse the order    
+            ordered_gaitcycles = gaitcycles[::-1]
+            ordered_group_means = group_means[::-1]
+        
+        #print(np.shape(ordered_gaitcycles[0][0]))
             
-            #print(np.shape(ordered_gaitcycles[0][0]))
-                
-            for k, group in enumerate(ordered_groups):
-                #print(f"Group {i+1}: {len(group)} (Mean: {np.mean(group) if group else 'N/A'})")
-                percentdiff = (np.mean(group)-np.mean(ordered_groups[0]))/np.mean(ordered_groups[0])*100
-                    #print(f"Percent diff between groups = {round(percentdiff,3)}")
-                
+        for k, group in enumerate(ordered_groups):
+            print(f"Group {i+1}: {len(group)} (Mean: {np.mean(group) if group else 'N/A'})")
+            percentdiff = (np.mean(group)-np.mean(ordered_groups[0]))/np.mean(ordered_groups[0])*100
+                #print(f"Percent diff between groups = {round(percentdiff,3)}")
+        
+        # Split each array and append to respective lists
+        gaitcycles_40x6 = [] #pelvis
+        gaitcycles_40x12_1 = [] #upper
+        gaitcycles_40x12_2 = [] #lower
+
+        # Iterate over each sublist in gaitcycles
+        for sublist in gaitcycles:
+            
+            sublist_40x6 = []
+            sublist_40x12_1 = []
+            sublist_40x12_2 = []
+            
+            # Split each array in the sublist
+            for array in sublist:
+                split_arrays = np.split(array, [6, 18], axis=1)  # Split the array into 40x6, 40x12, 40x12 parts
+                sublist_40x6.append(signal.filtfilt(b20, a20, split_arrays[0], axis=0)) #Filter individual gait cycles and split them (first 6, next 12, next 12)
+                sublist_40x12_1.append(signal.filtfilt(b20, a20, split_arrays[1], axis=0))
+                sublist_40x12_2.append(signal.filtfilt(b20, a20, split_arrays[2], axis=0))
+            
+            # Append the split sublists to the main lists
+            gaitcycles_40x6.append(sublist_40x6)
+            gaitcycles_40x12_1.append(sublist_40x12_1)
+            gaitcycles_40x12_2.append(sublist_40x12_2)
+
+        # Pelvis, upper, lower
+        combined_sensor_configs = [gaitcycles_40x6, gaitcycles_40x12_1, gaitcycles_40x12_2]            
+        
+        for i, raw_sensor in enumerate(combined_sensor_configs):
+            
             #Implementation for DTW
-            print("Testing dynamic time warping")
-            dtw_mean_distances = []
-            #Computing the within group distance for baseline
-            dtw_within = tslearn_dtw_analysis(set1 = ordered_gaitcycles[0], set2=None)
-            dtw_mean_distances.append(dtw_within)
-            add_row_to_csv(csv_path, arrangements[i],'STSR', 'DTW',participant,np.mean(ordered_groups[0]),dtw_within)
+            print(f"Sensor arrangement: {arrangements[i]}")
             
-            for j in range(1, len(ordered_gaitcycles)):
-                dtw_between = tslearn_dtw_analysis(set1 = ordered_gaitcycles[0], set2=ordered_gaitcycles[j]) # type: ignore
+            dtw_mean_distances = []
+            
+            #Computing the within group distance for baseline
+            dtw_within = tslearn_dtw_analysis(set1 = raw_sensor[0], set2=None) # type: ignore
+            dtw_mean_distances.append(dtw_within)
+            #add_row_to_csv(csv_path, arrangements[i],'STSR', 'DTW',participant,np.mean(raw_sensor[0]), dtw_within)
+            
+            for j in range(1, len(raw_sensor)):
+                dtw_between = tslearn_dtw_analysis(set1 = raw_sensor[0], set2 = raw_sensor[j]) # type: ignore
                 dtw_mean_distances.append(dtw_between)
-                add_row_to_csv(csv_path, arrangements[i],'STSR', 'DTW',participant,np.mean(ordered_groups[j]), dtw_between)
+                #add_row_to_csv(csv_path, arrangements[i],'STSR', 'DTW',participant,np.mean(raw_sensor[j]), dtw_between)
                 
             print(dtw_mean_distances)    
-            
-            #Implementation for SOM
-            from sklearn.model_selection import train_test_split
+        
+    #     # #Implementation for SOM
+    #     from sklearn.model_selection import train_test_split
 
-            # Shuffle and split the list
-            train_arrays, test_arrays = train_test_split(ordered_gaitcycles[0], test_size=0.2, random_state=42)
+    #     # Shuffle and split the list
+    #     train_arrays, test_arrays = train_test_split(ordered_gaitcycles[0], test_size=0.2, random_state=42)
+    #     # Concatenate arrays for training and testing
+    #     train_data = np.concatenate(train_arrays, axis=0)
+    #     test_data = np.concatenate(test_arrays, axis=0)
 
-            # Concatenate arrays for training and testing
-            train_data = np.concatenate(train_arrays, axis=0)
-            test_data = np.concatenate(test_arrays, axis=0)
+    #     print("Training Data Shape:", train_data.shape)
+    #     print("Testing Data Shape:", test_data.shape)
+        
+    #     print("Training the SOM on baseline data")
+    #     MDP_mean_deviations = []
+        
+    #     trained_SOM = train_minisom(train_data, learning_rate=0.1, topology='hexagonal', normalize=False) # type: ignore
+    #     test_baseline = calculate_MDP(test_data, train_data, trained_SOM, normalize=False) # type: ignore
+    #     MDP_mean_deviations.append(np.mean(test_baseline))
+    #     add_row_to_csv(csv_path, arrangements[i],'STSR', 'MDP',participant,np.mean(ordered_groups[0]), np.mean(test_baseline))
+        
+    #     for j in range(1, len(ordered_gaitcycles)):
+    #         train_arrays, test_arrays = train_test_split(ordered_gaitcycles[j], test_size=0.2, random_state=42)
+    #         test_data_upperlevels = np.concatenate(test_arrays, axis=0)
+    #         test_upperlevels = calculate_MDP(test_data_upperlevels, train_data, trained_SOM, normalize=False) # type: ignore
+    #         MDP_mean_deviations.append(np.mean(test_upperlevels))
+    #         add_row_to_csv(csv_path, arrangements[i],'STSR','MDP',participant, np.mean(ordered_groups[j]), np.mean(test_upperlevels))
+            
+    #     #Visualizing the distributions 
+        
+    #     ax = axes[i]
+    #     ax.scatter(ordered_group_means, MDP_mean_deviations)
+    #     ax.set_xlabel("STSR")
+    #     ax.set_ylabel("Mean MDP")
+    #     ax.set_title(f"{participant}: Sensor config: {arrangements[i]}")
+        
+    # #plt.show()
+    # fig.savefig(f'C:\GP-WearablesAnalysis\plots\MDP_{participant}.png')
+    
+    #Implementing the HMM
+    
+        # strides_train_flat = {}
+        # strides_test_flat = {}
+        # strides_train = {}
+        # strides_test = {}
 
-            print("Training Data Shape:", train_data.shape)
-            print("Testing Data Shape:", test_data.shape)
+        # hmm_models = {}
+        # num_models_train = 10
+        
+        # resize_len = 40
+        
+        # concat_strides = {}
+        # strides_to_concat = 10
+        # num_states=3 #Changed from 5 to 2
+        # train_iterations = 300 
+        # train_tolerance = 1e-2
+
+        # for group in ordered_gaitcycles:
+        #     group = np.array(group)
+        #     concat_strides = []
+        #     for i in range(group.shape[0] - strides_to_concat):
+        #         temp = []
+        #         for j in range(strides_to_concat):
+        #             temp.append(group[i + j])
+
+        #         concat_strides.append(np.concatenate(temp, axis=0))
+
+        #     concat_strides = np.array(concat_strides)
+        #     concat_strides= signal.filtfilt(b20, a20, concat_strides, axis=1)
             
-            print("Training the SOM on baseline data")
-            trained_SOM = train_minisom(train_data, learning_rate=0.1, topology='hexagonal', normalize=True)
-            test_baseline = calculate_MDP(test_data, train_data, trained_SOM, normalize=True)
-            add_row_to_csv(csv_path, arrangements[i],'STSR', 'MDP',participant,np.mean(ordered_groups[0]), np.mean(test_baseline))
+        # # for each symmetry range, train num_models_train HMMs on respective training data, stored in hmm_models dict
+        # for i,group in enumerate(ordered_gaitcycles):
+        #     print('Training %s models...' % (trial_type))
+        #     hmm_models = []
             
-            for j in range(1, len(ordered_gaitcycles)):
-                train_arrays, test_arrays = train_test_split(ordered_gaitcycles[j], test_size=0.2, random_state=42)
-                test_data_upperlevels = np.concatenate(test_arrays, axis=0)
-                test_upperlevels = calculate_MDP(test_data_upperlevels, train_data, trained_SOM, normalize=True)
-                add_row_to_csv(csv_path, arrangements[i],'STSR','MDP',participant, np.mean(ordered_groups[j]), np.mean(test_upperlevels))
-                
-            
+        #     for j in range(num_models_train):
+        #         train_forward_model = True
+        #         k = 0
+
+        #         while(train_forward_model):
+        #             print('Train Attempt ', k+1, end="\r", flush=True)
+        #             if(j > -1):
+        #                 np.random.shuffle(concat_strides)
+
+        #             # flatten sequence for hmmlearn train function
+        #             strides_sequence_flattened = concat_strides.reshape((concat_strides[i].shape[0] * concat_strides[i].shape[1], -1))
+
+        #             # technically is no training/testing data, but this preserves a few gait cycles to compare the hidden-state sequence predictions of the HMMs
+        #             len_train = int(0.95 * len(concat_strides))
+        #             strides_train = concat_strides[:len_train]
+        #             strides_test= concat_strides[len_train:]
+        #             sequence_length = resize_len * strides_to_concat
+        #             strides_train_flat = strides_sequence_flattened[:sequence_length * len_train]
+        #             strides_test_flat = strides_sequence_flattened[sequence_length * len_train:]
+
+        #             hmm_model = HMMTrainer(n_components = num_states, n_iter = train_iterations, tolerance = train_tolerance)
+        #             hmm_model.train(strides_train_flat, sequence_length, len_train)
+
+        #             # double checks for left-to-right architecture in transition matrix
+        #             valid_rows = 0
+        #             a_mat = hmm_model.model.transmat_
+        #             for i, row in enumerate(a_mat):
+        #                 temp = np.argpartition(np.roll(row, -i), -2)[-2:]
+        #                 if((np.array(temp) == np.array([0,1])).all() or (np.array(temp) == np.array([1,0])).all()):
+        #                     valid_rows = valid_rows + 1
+
+        #             # correct_second_state = [i for i in range(num_states - 1)]
+        #             # correct_second_state.append(0)        
+        #             # for i, row in enumerate(hmm_model.model.transmat_):
+        #             #     max_state = np.argmax(row)
+        #             #     if(max_state == i):
+        #             #         temp = [j for j in row if not (j == row[max_state])]
+        #             #         if(np.argmax(temp) == correct_second_state[i]):
+        #             #             valid_rows = valid_rows + 1
+
+        #             # if model is left-to-right, consider model trained, train next model (until num_models_train reached)
+        #             if(valid_rows == num_states):
+        #                 train_forward_model = False
+        #             k = k + 1
+
+        #         # print()
+        #         hmm_models[trial_type].append(hmm_model)
+
+        # print('done')
