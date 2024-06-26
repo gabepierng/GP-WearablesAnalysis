@@ -51,16 +51,25 @@ def reshape_vector(vectors_orig, new_size, num_axes=3):
         trial_reshaped.append(vec_cubic)
     return np.array(trial_reshaped)
 
+#uses dictionaries to extract the relevant raw sensor data, reshapes the data, then concatenates gyro and accelerometer signals together 
 def organize_signals(sensor_mappings, gyro_signal, accel_signal):
     combined_signals = {}
     for location, sensor in sensor_mappings.items():
         reshaped_gyro = reshape_vector(gyro_signal[sensor], 40, 3)
         reshaped_accel = reshape_vector(accel_signal[sensor], 40, 3)
-        combined = np.concatenate((reshaped_gyro, reshaped_accel), axis=2) #Concatenates to gyro x,y,z and accel x,y,z
-        combined_signals[location] = combined
+        combined_signals[location] = np.concatenate((reshaped_gyro, reshaped_accel), axis=2) #Concatenates to gyro x,y,z and accel x,y,z
     return combined_signals
 
+""" Data grouping/splitting pipeline:"""
+
+""" Split the data into desired number of groups, and extract the first "target mean" from the first group. Subsequent target means are calculated as X% (percent grading) away from previous groups
+    ex. if 3% is selected, means of groups will increment by 3% - the direction of incrementing (up/down) depends on whether reverse is selected 
+    Iterate through indices in the gait parameter data (in this case, STSR) and append to a grouping if they are within a threshold from the target mean. 
+    Sort both the gait parameter and corresponding gait cycles based on the chosen indices. 
+"""
+
 def finding_groupings(num_groups, gait_parameter, gait_cycles, percent_grading, reverse=True):
+    
     if reverse:
         percent_grading = -percent_grading
         values_sorted = sorted(gait_parameter, reverse=True)
@@ -90,6 +99,15 @@ def finding_groupings(num_groups, gait_parameter, gait_cycles, percent_grading, 
         remaining_indices = [idx for idx in remaining_indices if idx not in selected_indices]
 
     return groups, grouped_gait_cycles, percent_grading            
+
+""" Random Sampling Gait Cycles:"""
+
+""" random_sampling: Randomly sample 50 gait cycles from group 1. This serves as the "first_mean" that will be compared to in adaptive subsampling.
+    adaptive_subsample: Randomly sample 50 gait cycles from a given group. If it is within X% * i +/- tolerance (i is the index of the group (ex. group 2 = 1)), then that group is accepted.
+    Otherwise, the maximum or minimum is removed and another value still available is added (depending on if the current percent difference is too high or too low)
+    Handles if the means are decreasing or increasing (if percent_diff is negative or positive)
+    Returns the indices of the groups, and these are used to update the new groups in random_sampling.
+"""
 
 def random_sampling(groups, grouped_gait_cycles, sample_size=50):
     def adaptive_subsample(group, first_mean, i, percent_grading=0.03, tolerance=0.003, sample_size=50, max_iterations=10000):
@@ -130,6 +148,7 @@ def random_sampling(groups, grouped_gait_cycles, sample_size=50):
                     else:
                         new_idx = np.random.choice(available_indices)
                         sample_indices = np.append(sample_indices, new_idx)
+                    
                     available_indices.remove(new_idx)
                     sample_indices = np.delete(sample_indices, np.argmin([group[idx] for idx in sample_indices]))
             else:
@@ -141,6 +160,7 @@ def random_sampling(groups, grouped_gait_cycles, sample_size=50):
                     else:
                         new_idx = np.random.choice(available_indices)
                         sample_indices = np.append(sample_indices, new_idx)
+                    
                     available_indices.remove(new_idx)
                     sample_indices = np.delete(sample_indices, np.argmax([group[idx] for idx in sample_indices]))
                 else:
@@ -152,6 +172,7 @@ def random_sampling(groups, grouped_gait_cycles, sample_size=50):
                     else:
                         new_idx = np.random.choice(available_indices)
                         sample_indices = np.append(sample_indices, new_idx)
+                    
                     available_indices.remove(new_idx)
                     sample_indices = np.delete(sample_indices, np.argmin([group[idx] for idx in sample_indices]))
 
@@ -176,6 +197,8 @@ def random_sampling(groups, grouped_gait_cycles, sample_size=50):
         gaitcycles_subsampled_list.append(subsampled_gait_cycles)
     
     return groups_subsampled_list, gaitcycles_subsampled_list
+
+""" Group splitting and sampling are called. Checks to see which direction the grouping should be done in, and only appends the groups that have at least 70 points"""
 
 def check_group_configurations(gait_split_parameter, raw_sensor_data):
     groups, grouped_gait_cycles, grading = finding_groupings(4, gait_split_parameter, raw_sensor_data, 0.03, reverse=False)
@@ -205,7 +228,7 @@ def check_group_configurations(gait_split_parameter, raw_sensor_data):
     
     return groups, gaitcycles
    
-# Specify the bucket name and base directory within the bucket
+# bucket name and base directory within the bucket
 bucket_name = 'gaitbfb_propellab/'
 base_directory = bucket_name + 'Wearable Biofeedback System (REB-0448)/Data/Raw Data'
 bucket_name = 'gaitbfb_propellab'
@@ -216,16 +239,12 @@ arrangements = ['pelvis','upper','lower']
 
 for participant in participant_list:
     print(f"Processing participant {participant}")
-    
     directory = prefix_from_bucket + participant + '/Excel_Data_Trimmed'
     blobs = storage_client.list_blobs(bucket_or_name=bucket_name, prefix=directory.replace("\\", "/"))
     part_strides = {}
     part_gait_params = {}
     part_kinematic_params = {}
-    
-    part_pelvis_data = []
-    part_upper_data = []
-    part_lower_data = []
+
     part_raw_sensor = []
     
     trial_type = 'LLPU'
@@ -241,12 +260,8 @@ for participant in participant_list:
             if blob.name.endswith('.csv'):
                 try:
                     XsensGaitParser.process_mvn_trial_data(f"gs://{bucket_name}/{blob.name}")
-                    #print(f"Processing data from gs://{bucket_name}/{blob.name}")
                     partitioned_mvn_data = XsensGaitParser.get_partitioned_mvn_data()
                     gait_params = XsensGaitParser.get_gait_param_info()
-                    
-                    gyro_signal = partitioned_mvn_data['gyro_data']
-                    accel_signal = partitioned_mvn_data['acc_data']
                     
                     combined_signals = organize_signals(sensor_mappings, partitioned_mvn_data['gyro_data'], partitioned_mvn_data['acc_data'])
                     pelvis_data = combined_signals['pelvis']
@@ -255,12 +270,7 @@ for participant in participant_list:
                     
                     full_sensors = np.concatenate((pelvis_data,upper_data,lower_data),axis=2)
                     part_raw_sensor.append(full_sensors)
-                    
-                    partitioned_mvn_data = XsensGaitParser.get_partitioned_mvn_data()
-                    knee_angle = partitioned_mvn_data['knee_angle']
-                    knee_angle_R = knee_angle[0]
-                    trial_type = 'LLPU'
-                    
+
                     if trial_type in part_strides:
                         for body_part in part_strides[trial_type]:
                             for i, side in enumerate(part_strides[trial_type][body_part]):
@@ -313,14 +323,14 @@ for participant in participant_list:
         stance_time_symmetry = [item for sublist in [i[12] for i in part_gait_params[trial_type]] for item in sublist]
         stance_time_symmetry_baseline = [item for sublist in [i[12] for i in part_gait_params_baseline[trial_type]] for item in sublist]
         stance_time_symmetry_baseline_mean = np.mean(stance_time_symmetry_baseline)
-        print(len(stance_time_symmetry))
+        #print(len(stance_time_symmetry))
         
         flattened_raw_sensor = []
         for sublist in part_raw_sensor:
             for item in sublist:
                 flattened_raw_sensor.append(item) #Flatten to individual gait cycles 
         
-        print(len(flattened_raw_sensor))
+        #print(len(flattened_raw_sensor))
         
         groups, gaitcycles = check_group_configurations(stance_time_symmetry, flattened_raw_sensor)
         group_means = [np.mean(group) for group in groups]
@@ -338,13 +348,14 @@ for participant in participant_list:
             ordered_groups = groups[::-1]  # Reverse the order    
             ordered_gaitcycles = gaitcycles[::-1]
             ordered_group_means = group_means[::-1]
-        
-        #print(np.shape(ordered_gaitcycles[0][0]))
-            
+
         for k, group in enumerate(ordered_groups):
             print(f"Group {i+1}: {len(group)} (Mean: {np.mean(group) if group else 'N/A'})")
             percentdiff = (np.mean(group)-np.mean(ordered_groups[0]))/np.mean(ordered_groups[0])*100
                 #print(f"Percent diff between groups = {round(percentdiff,3)}")
+        
+        """Splitting of the raw sensor data was done with all of the sensors concatenated along the last axis (i.e. each gait cycle with 40 points would be a 40x30 array (6 axis pelvis + 12 axis upper + 12 axis lower))"""
+        """This is used to split them out into their respective sensor configurations (pelvis, upper, lower)"""
         
         # Split each array and append to respective lists
         gaitcycles_40x6 = [] #pelvis
@@ -353,7 +364,6 @@ for participant in participant_list:
 
         # Iterate over each sublist in gaitcycles
         for sublist in gaitcycles:
-            
             sublist_40x6 = []
             sublist_40x12_1 = []
             sublist_40x12_2 = []
@@ -373,13 +383,10 @@ for participant in participant_list:
         # Pelvis, upper, lower
         combined_sensor_configs = [gaitcycles_40x6, gaitcycles_40x12_1, gaitcycles_40x12_2]            
         
-        for i, raw_sensor in enumerate(combined_sensor_configs):
-            
+        for i, raw_sensor in enumerate(combined_sensor_configs): #Iterates through each sensor configuration (pelvis, upper, lower)
             #Implementation for DTW
             print(f"Sensor arrangement: {arrangements[i]}")
-            
             dtw_mean_distances = []
-            
             #Computing the within group distance for baseline
             dtw_within = tslearn_dtw_analysis(set1 = raw_sensor[0], set2=None) # type: ignore
             dtw_mean_distances.append(dtw_within)

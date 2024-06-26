@@ -5,6 +5,7 @@ from minisom import MiniSom
 import matplotlib.pyplot as plt
 import scipy.linalg as la
 import math
+from hmmlearn import hmm
 
 '''
 Calculates the Gait Profile Score (GPS) as outlined by Baker et al. (https://pubmed.ncbi.nlm.nih.gov/19632117/)
@@ -66,13 +67,14 @@ def tslearn_dtw_analysis(set1, set2=None):
             for j in range(i + 1, len(set1)):
                 distance = tslearndtw_distance(set1[i], set1[j])
                 dtw_dist.append(distance)
-        return np.mean(dtw_dist)
+        return np.median(dtw_dist)
+    
     else:
         for gaitcycle1 in set1:
             for gaitcycle2 in set2:
                 distance = tslearndtw_distance(gaitcycle1, gaitcycle2)
                 dtw_dist.append(distance)
-        return np.mean(dtw_dist)
+        return np.median(dtw_dist)
 
 """
 Training a Self Organizing Map (SOM)
@@ -110,8 +112,8 @@ def train_minisom(control_data, learning_rate=0.1, topology='hexagonal', normali
     print("Map size:",msize)
     print("Number of map units",x*y)
     
-    #steps = 500 * (dim ** 2) # Number of iterations - previous heuristic: 500 * number of network units [2] 
-    steps = int(10*(x*y)/control_data.shape[0]) #Based on .trainlen = 10*m/n (m is # map units, n is the number of training samples)
+    steps = 100 # Number of iterations - previous heuristic: 500 * number of network units [2] 
+    #steps = int(10*(x*y)/control_data.shape[0]) #Based on .trainlen = 10*m/n (m is # map units, n is the number of training samples)
     sigma = max(msize) / 4 # Sigma used: Heuristic: max(msize)/4 [1] 
     
     #Initializing the SOM
@@ -130,9 +132,9 @@ def train_minisom(control_data, learning_rate=0.1, topology='hexagonal', normali
     #Option for visualizing the map
     u_matrix = som2.distance_map().T
     plt.figure(figsize=(10,10))
-    plt.pcolor(u_matrix, cmap= 'viridis' )
+    plt.pcolor(u_matrix, cmap= 'viridis')
     plt.colorbar()
-    plt.show()
+    #plt.show()
     
     return som2
     
@@ -171,6 +173,48 @@ def calculate_MDP(data, controldata, som, normalize=True):
     deviation = np.linalg.norm(data - BMU, axis=1)  # Calculate Euclidean distances in the full dataset
     som._weights = som_weights #Returns the weights to what they were before 
     
-    return deviation, BMU
+    return deviation
 
 
+class HMMTrainer(object):
+    '''
+    Inputs:
+        model_name: type of probability distributions to represent emissions matrices
+        n_components: number of states to initialize HMM
+        cov_type: how to populate covariance matrix of emission probabilities. Options 'full', 'diag', 'spherical', 'tied'
+        n_iter: max iterations to train HMM
+        tolerance: cutoff for likelihood gait during training (i.e., model fitting stops once likelihood gait < tolerance)
+    '''
+    def __init__(self, model_name='GaussianHMM', n_components=4, cov_type='full', n_iter=50, tolerance = 0.005):
+        self.model_name = model_name
+        self.n_components = n_components
+        self.cov_type = cov_type
+        self.n_iter = n_iter
+        self.models = []
+        if self.model_name == 'GaussianHMM':
+            self.model = hmm.GaussianHMM(n_components=self.n_components, covariance_type=self.cov_type, n_iter=self.n_iter, tol=tolerance, params='stmc', init_params='mc', verbose=False)
+            self.model.transmat_ = np.zeros((n_components, n_components))
+            for i in range(n_components):
+                # initialize transition matrix to encourage a left-to-right model. Found that with this library, setting the 
+                # non-elements to 0 decreased consistency of the training when visualizing hidden-state sequence predictions. 
+                # Setting them to very small but non-zero values promotes l-to-r learning and improved HMM training consistency in testing
+                self.model.transmat_[i, 0:2] = np.random.dirichlet(np.ones(2)/1.5, size=1)
+                self.model.transmat_[i, 2:] = np.random.dirichlet(np.ones(self.n_components - 2), size=1)[0] / 1e80
+                self.model.transmat_[i] = np.roll(self.model.transmat_[i], i)
+
+
+        else:
+            raise TypeError('Invalid model type') 
+
+    # resize_len = length of training sequences
+    def train(self, X, resize_len, num_sequences):
+        np.seterr(all='ignore')
+
+        self.model.fit(X, lengths=resize_len * np.ones(num_sequences, dtype=int))
+        # x_concat = np.concatenate(X).reshape(-1,1)
+        # self.models.append(self.model.fit(X))
+        # self.models.append(self.model.fit(x_concat, lengths = [X.shape[1] for i in range(X.shape[0])]))
+        # Run the model on input data
+    def get_score(self, input_data):
+        return self.model.score(input_data)
+        # return self.model.score(input_data.reshape(-1,1))
