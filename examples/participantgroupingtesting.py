@@ -16,6 +16,8 @@ import csv
 import matplotlib.pyplot as plt
 from hmmlearn import hmm
 from sklearn.model_selection import train_test_split
+import random
+import copy
 
 #Dictionary to map the sensor locations to their IDs.
 sensor_mappings = {
@@ -501,7 +503,7 @@ for participant in participant_list:
             strides_test = {}
 
             hmm_models = {}
-            num_models_train = 10 #previously 4
+            num_models_train = 10 
             
             resize_len = 40
             
@@ -519,22 +521,11 @@ for participant in participant_list:
             #     print(f"Shape of stacked array for group {idx}: {np.shape(stacked)}")
             #     concat_strides[idx] = stacked  # Use idx as the key
             
-            import random
-            
             concat_strides = {}
-            trial_types = []
-            sym_list = []
-            group_num = 0
-            for i in range(len(raw_sensor)):
-                trial_types.append(f'group {group_num+1}')
-                
-
+   
             for idx, group in enumerate(raw_sensor):
-                
                 concat_strides[idx] = []
-                random.shuffle(group)
                 group = np.array(group)
-                
                 for i in range(group.shape[0] - strides_to_concat):
                     temp = []
                     for j in range(strides_to_concat):
@@ -543,12 +534,12 @@ for participant in participant_list:
 
                 concat_strides[idx] = np.array(concat_strides[idx])
                 concat_strides[idx] = signal.filtfilt(b20, a20, concat_strides[idx], axis=1)
-                print(len(concat_strides[0]))
+                
             
             hmm_models = {}        
             for idx, group in enumerate(raw_sensor):
-                hmm_models[idx] = []
                 
+                hmm_models[idx] = []
                 for j in range(num_models_train):
                     train_forward_model = True
                     k = 0
@@ -556,8 +547,8 @@ for participant in participant_list:
                     while(train_forward_model):
                         print('Train Attempt ', k+1, end="\r", flush=True)
                         
-                        # if(j > -1):
-                        #     np.random.shuffle(concat_strides)
+                        if(j > -1):
+                            np.random.shuffle(concat_strides)
                             
                         # flatten sequence for hmmlearn train function
                         strides_sequence_flattened = concat_strides[idx].reshape((concat_strides[idx].shape[0] * concat_strides[idx].shape[1], -1))
@@ -591,7 +582,8 @@ for participant in participant_list:
                         #         if(np.argmax(temp) == correct_second_state[i]):
                         #             valid_rows = valid_rows + 1
 
-                        # if model is left-to-right, consider model trained, train next model (until num_models_train reached)
+                        #if model is left-to-right, consider model trained, train next model (until num_models_train reached)
+                        
                         if(valid_rows == num_states):
                             train_forward_model = False
                         k = k + 1
@@ -600,11 +592,10 @@ for participant in participant_list:
 
             print('done')
             
-            test_predict = strides_test[0][1]
+            test_predict = strides_test[0][1] #First element of idx = 0
             min_predict = np.min(test_predict[:,1])
             max_predict = np.max(test_predict[:,1])
 
-            import copy
             
             # technically shouldn't be necessary for the HMM similarity measure, but useful for comparing hidden state
             # sequence predictions and plotting to align the HMM states and emissions matrices
@@ -634,7 +625,6 @@ for participant in participant_list:
 
             shift_all = 0
         
-            
             def find_best_alignment(hmm_1, hmm_2, test_stride, n_states):
                 min_distance = 9999999
                 best_roll = 0
@@ -673,7 +663,6 @@ for participant in participant_list:
             # HMM to itself
             
             for i, group in enumerate(raw_sensor):
-                # print()
                 for j, group in enumerate(raw_sensor):
                     sum_dif = 0
                     count = 0
