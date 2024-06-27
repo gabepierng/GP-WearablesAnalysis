@@ -15,6 +15,7 @@ import logging
 import csv
 import matplotlib.pyplot as plt
 from hmmlearn import hmm
+from sklearn.model_selection import train_test_split
 
 #Dictionary to map the sensor locations to their IDs.
 sensor_mappings = {
@@ -35,6 +36,70 @@ current_datetime = datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
 csv_filename = f"logresults_{run_time}.csv" #Builds a log file based on the current time to keep track of runs
 csv_path = os.path.join(script_dir, csv_filename)
 
+
+def calculate_state_correspondence_matrix(hmm_1, hmm_2, n_states):
+    def calculate_stationary_distribution(hmm):
+        eigenvals, eigenvectors = np.linalg.eig(hmm.model.transmat_.T)
+        stationary = np.array(eigenvectors[:, np.where(np.abs(eigenvals - 1.) < 1e-8)[0][0]])
+        stationary = stationary / np.sum(stationary)
+        return np.expand_dims(stationary.real, axis=-1)
+
+    # KL-Divergence = method for determining the difference between two probability distributions
+    def calculate_KL_div(hmm_model_1, hmm_model_2, state_model_1, state_model_2):
+        means_1 = np.expand_dims(hmm_model_1.means_[state_model_1], axis=-1)
+        means_2 = np.expand_dims(hmm_model_2.means_[state_model_2], axis=-1)
+
+        covars_1 = hmm_model_1.covars_[state_model_1]
+        covars_2 = hmm_model_2.covars_[state_model_2]
+
+        term_1 = (means_2 - means_1).T @ np.linalg.inv(covars_2) @ (means_2 - means_1)
+        term_2 = np.trace(np.linalg.inv(covars_2) @ covars_1)
+        term_3 = np.log(np.linalg.det(covars_1) / np.linalg.det(covars_2))
+        term_4 = len(covars_1)
+
+        kl_divergence = 0.5 * (term_1 + term_2 - term_3 - term_4)
+
+        return kl_divergence
+
+    kl_state_comparisons = np.zeros((n_states, n_states))
+    pi_1 = calculate_stationary_distribution(hmm_1)
+    pi_2 = calculate_stationary_distribution(hmm_2)
+    total_expected_similarity = 0
+
+    for i in range(n_states):
+        for j in range(n_states):
+            kl_state_comparisons[i,j] = 0.5 * (calculate_KL_div(hmm_1.model, hmm_2.model, i, j) + calculate_KL_div(hmm_2.model, hmm_1.model, i, j))
+            total_expected_similarity = total_expected_similarity + (pi_1[i] * pi_2[j] * kl_state_comparisons[i,j])
+
+    k = 1
+
+    # alternative methods of calculating similarity based on KL-Divergence
+    # s_e = np.exp(-k * kl_state_comparisons)
+    s_e = 1 / kl_state_comparisons
+
+    # pi_1.T @ pi_2 should produce a N x N matrix (pi_1i * pi_2j)
+    q_matrix = ((pi_1 @ pi_2.T) * s_e) / total_expected_similarity
+
+    return q_matrix
+
+def calculate_gini_index(q_matrix, n_states):
+    def calc_gini(vector):
+        vector = np.sort(vector)
+        l1_norm = np.linalg.norm(vector, 1)
+        a = 0
+        for i in range(1, n_states+1):
+            a = a + (vector[i-1] / l1_norm) * ((n_states - i + 0.5) / (n_states - 1))
+
+        vec_sparsity = (n_states / (n_states - 1)) - (2 * a)
+
+        return vec_sparsity
+
+    # calculate mean sparsity of each row vector (r) and column vector (c) in Q matrix
+    r = (1 / n_states) * np.sum([calc_gini(row) for row in q_matrix])
+    c = (1 / n_states) * np.sum([calc_gini(column) for column in q_matrix.T])
+
+    gini_index = 0.5 * (r + c)
+    return gini_index
 # Function to add a row of data to the CSV file
 def add_row_to_csv(csv_path, sensor_config, gait_param, algorithm, participant_num, level, parameter):
     with open(csv_path, mode='a', newline='') as file:
@@ -384,7 +449,9 @@ for participant in participant_list:
         combined_sensor_configs = [gaitcycles_40x6, gaitcycles_40x12_1, gaitcycles_40x12_2]            
         
         for i, raw_sensor in enumerate(combined_sensor_configs): #Iterates through each sensor configuration (pelvis, upper, lower)
-            #Implementation for DTW
+            
+            """ DTW Implementation"""
+            
             print(f"Sensor arrangement: {arrangements[i]}")
             dtw_mean_distances = []
             #Computing the within group distance for baseline
@@ -399,126 +466,229 @@ for participant in participant_list:
                 
             print(dtw_mean_distances)    
         
-    #     # #Implementation for SOM
-    #     from sklearn.model_selection import train_test_split
-
-    #     # Shuffle and split the list
-    #     train_arrays, test_arrays = train_test_split(ordered_gaitcycles[0], test_size=0.2, random_state=42)
-    #     # Concatenate arrays for training and testing
-    #     train_data = np.concatenate(train_arrays, axis=0)
-    #     test_data = np.concatenate(test_arrays, axis=0)
-
-    #     print("Training Data Shape:", train_data.shape)
-    #     print("Testing Data Shape:", test_data.shape)
-        
-    #     print("Training the SOM on baseline data")
-    #     MDP_mean_deviations = []
-        
-    #     trained_SOM = train_minisom(train_data, learning_rate=0.1, topology='hexagonal', normalize=False) # type: ignore
-    #     test_baseline = calculate_MDP(test_data, train_data, trained_SOM, normalize=False) # type: ignore
-    #     MDP_mean_deviations.append(np.mean(test_baseline))
-    #     add_row_to_csv(csv_path, arrangements[i],'STSR', 'MDP',participant,np.mean(ordered_groups[0]), np.mean(test_baseline))
-        
-    #     for j in range(1, len(ordered_gaitcycles)):
-    #         train_arrays, test_arrays = train_test_split(ordered_gaitcycles[j], test_size=0.2, random_state=42)
-    #         test_data_upperlevels = np.concatenate(test_arrays, axis=0)
-    #         test_upperlevels = calculate_MDP(test_data_upperlevels, train_data, trained_SOM, normalize=False) # type: ignore
-    #         MDP_mean_deviations.append(np.mean(test_upperlevels))
-    #         add_row_to_csv(csv_path, arrangements[i],'STSR','MDP',participant, np.mean(ordered_groups[j]), np.mean(test_upperlevels))
+            # """ SOM Implementation"""
+            # # Shuffle and split the list
+            # train_arrays, test_arrays = train_test_split(raw_sensor[0], test_size=0.2, random_state=42)
             
-    #     #Visualizing the distributions 
-        
-    #     ax = axes[i]
-    #     ax.scatter(ordered_group_means, MDP_mean_deviations)
-    #     ax.set_xlabel("STSR")
-    #     ax.set_ylabel("Mean MDP")
-    #     ax.set_title(f"{participant}: Sensor config: {arrangements[i]}")
-        
-    # #plt.show()
-    # fig.savefig(f'C:\GP-WearablesAnalysis\plots\MDP_{participant}.png')
-    
-    #Implementing the HMM
-    
-        # strides_train_flat = {}
-        # strides_test_flat = {}
-        # strides_train = {}
-        # strides_test = {}
+            # # Concatenate arrays for training and testing
+            # train_data = np.concatenate(train_arrays, axis=0)
+            # test_data = np.concatenate(test_arrays, axis=0)
 
-        # hmm_models = {}
-        # num_models_train = 10
-        
-        # resize_len = 40
-        
-        # concat_strides = {}
-        # strides_to_concat = 10
-        # num_states=3 #Changed from 5 to 2
-        # train_iterations = 300 
-        # train_tolerance = 1e-2
-
-        # for group in ordered_gaitcycles:
-        #     group = np.array(group)
-        #     concat_strides = []
-        #     for i in range(group.shape[0] - strides_to_concat):
-        #         temp = []
-        #         for j in range(strides_to_concat):
-        #             temp.append(group[i + j])
-
-        #         concat_strides.append(np.concatenate(temp, axis=0))
-
-        #     concat_strides = np.array(concat_strides)
-        #     concat_strides= signal.filtfilt(b20, a20, concat_strides, axis=1)
+            # print("Training Data Shape:", train_data.shape)
+            # print("Testing Data Shape:", test_data.shape)
             
-        # # for each symmetry range, train num_models_train HMMs on respective training data, stored in hmm_models dict
-        # for i,group in enumerate(ordered_gaitcycles):
-        #     print('Training %s models...' % (trial_type))
-        #     hmm_models = []
+            # print("Training the SOM on baseline data")
+            # MDP_mean_deviations = []
             
-        #     for j in range(num_models_train):
-        #         train_forward_model = True
-        #         k = 0
+            # trained_SOM = train_minisom(train_data, learning_rate=0.1, topology='hexagonal', normalize=False) # type: ignore
+            # test_baseline = calculate_MDP(test_data, train_data, trained_SOM, normalize=False) # type: ignore
+            # MDP_mean_deviations.append(np.mean(test_baseline))
+            
+            # for j in range(1, len(ordered_gaitcycles)):
+            #     #Shuffle and split the list (only looking at the test data here)
+            #     train_arrays, test_arrays = train_test_split(raw_sensor[j], test_size=0.2, random_state=42)
+            #     test_data_upperlevels = np.concatenate(test_arrays, axis=0)
+            #     test_upperlevels = calculate_MDP(test_data_upperlevels, train_data, trained_SOM, normalize=False) # type: ignore
+            #     MDP_mean_deviations.append(np.mean(test_upperlevels))
+                
+            # print(f"MDP mean deviations: {MDP_mean_deviations}")
+        
+            #Implementing the HMM
+        
+            strides_train_flat = {}
+            strides_test_flat = {}
+            strides_train = {}
+            strides_test = {}
 
-        #         while(train_forward_model):
-        #             print('Train Attempt ', k+1, end="\r", flush=True)
-        #             if(j > -1):
-        #                 np.random.shuffle(concat_strides)
+            hmm_models = {}
+            num_models_train = 10 #previously 4
+            
+            resize_len = 40
+            
+            concat_strides = {}
+            strides_to_concat = 10
+            num_states=3 #Changed from 5 to 2
+            train_iterations = 300 
+            train_tolerance = 1e-2
 
-        #             # flatten sequence for hmmlearn train function
-        #             strides_sequence_flattened = concat_strides.reshape((concat_strides[i].shape[0] * concat_strides[i].shape[1], -1))
+            # concat_strides = {}  
 
-        #             # technically is no training/testing data, but this preserves a few gait cycles to compare the hidden-state sequence predictions of the HMMs
-        #             len_train = int(0.95 * len(concat_strides))
-        #             strides_train = concat_strides[:len_train]
-        #             strides_test= concat_strides[len_train:]
-        #             sequence_length = resize_len * strides_to_concat
-        #             strides_train_flat = strides_sequence_flattened[:sequence_length * len_train]
-        #             strides_test_flat = strides_sequence_flattened[sequence_length * len_train:]
+            # # Process each group in raw_sensor
+            # for idx, group in enumerate(raw_sensor):
+            #     stacked = np.stack(group, axis=0)
+            #     print(f"Shape of stacked array for group {idx}: {np.shape(stacked)}")
+            #     concat_strides[idx] = stacked  # Use idx as the key
+            
+            import random
+            
+            concat_strides = {}
+            trial_types = []
+            sym_list = []
+            group_num = 0
+            for i in range(len(raw_sensor)):
+                trial_types.append(f'group {group_num+1}')
+                
 
-        #             hmm_model = HMMTrainer(n_components = num_states, n_iter = train_iterations, tolerance = train_tolerance)
-        #             hmm_model.train(strides_train_flat, sequence_length, len_train)
+            for idx, group in enumerate(raw_sensor):
+                
+                concat_strides[idx] = []
+                random.shuffle(group)
+                group = np.array(group)
+                
+                for i in range(group.shape[0] - strides_to_concat):
+                    temp = []
+                    for j in range(strides_to_concat):
+                        temp.append(group[i + j])
+                    concat_strides[idx].append(np.concatenate(temp, axis=0))
 
-        #             # double checks for left-to-right architecture in transition matrix
-        #             valid_rows = 0
-        #             a_mat = hmm_model.model.transmat_
-        #             for i, row in enumerate(a_mat):
-        #                 temp = np.argpartition(np.roll(row, -i), -2)[-2:]
-        #                 if((np.array(temp) == np.array([0,1])).all() or (np.array(temp) == np.array([1,0])).all()):
-        #                     valid_rows = valid_rows + 1
+                concat_strides[idx] = np.array(concat_strides[idx])
+                concat_strides[idx] = signal.filtfilt(b20, a20, concat_strides[idx], axis=1)
+                print(len(concat_strides[0]))
+            
+            hmm_models = {}        
+            for idx, group in enumerate(raw_sensor):
+                hmm_models[idx] = []
+                
+                for j in range(num_models_train):
+                    train_forward_model = True
+                    k = 0
+                    
+                    while(train_forward_model):
+                        print('Train Attempt ', k+1, end="\r", flush=True)
+                        
+                        # if(j > -1):
+                        #     np.random.shuffle(concat_strides)
+                            
+                        # flatten sequence for hmmlearn train function
+                        strides_sequence_flattened = concat_strides[idx].reshape((concat_strides[idx].shape[0] * concat_strides[idx].shape[1], -1))
+                        
+                        # technically is no training/testing data, but this preserves a few gait cycles to compare the hidden-state sequence predictions of the HMMs
+                        len_train = int(0.95 * len(concat_strides[idx]))
+                        strides_train[idx] = concat_strides[idx][:len_train]
+                        strides_test[idx] = concat_strides[idx][len_train:]
+                        sequence_length = resize_len * strides_to_concat
+                        strides_train_flat[idx] = strides_sequence_flattened[:sequence_length * len_train]
+                        strides_test_flat[idx] = strides_sequence_flattened[sequence_length * len_train:]
 
-        #             # correct_second_state = [i for i in range(num_states - 1)]
-        #             # correct_second_state.append(0)        
-        #             # for i, row in enumerate(hmm_model.model.transmat_):
-        #             #     max_state = np.argmax(row)
-        #             #     if(max_state == i):
-        #             #         temp = [j for j in row if not (j == row[max_state])]
-        #             #         if(np.argmax(temp) == correct_second_state[i]):
-        #             #             valid_rows = valid_rows + 1
+                        hmm_model = HMMTrainer(n_components = num_states, n_iter = train_iterations, tolerance = train_tolerance)
+                        hmm_model.train(strides_train_flat[idx], sequence_length, len_train)
 
-        #             # if model is left-to-right, consider model trained, train next model (until num_models_train reached)
-        #             if(valid_rows == num_states):
-        #                 train_forward_model = False
-        #             k = k + 1
 
-        #         # print()
-        #         hmm_models[trial_type].append(hmm_model)
+                        # double checks for left-to-right architecture in transition matrix
+                        valid_rows = 0
+                        a_mat = hmm_model.model.transmat_
+                        for i, row in enumerate(a_mat):
+                            temp = np.argpartition(np.roll(row, -i), -2)[-2:]
+                            if((np.array(temp) == np.array([0,1])).all() or (np.array(temp) == np.array([1,0])).all()):
+                                valid_rows = valid_rows + 1
 
-        # print('done')
+                        # correct_second_state = [i for i in range(num_states - 1)]
+                        # correct_second_state.append(0)        
+                        # for i, row in enumerate(hmm_model.model.transmat_):
+                        #     max_state = np.argmax(row)
+                        #     if(max_state == i):
+                        #         temp = [j for j in row if not (j == row[max_state])]
+                        #         if(np.argmax(temp) == correct_second_state[i]):
+                        #             valid_rows = valid_rows + 1
+
+                        # if model is left-to-right, consider model trained, train next model (until num_models_train reached)
+                        if(valid_rows == num_states):
+                            train_forward_model = False
+                        k = k + 1
+
+                    hmm_models[idx].append(hmm_model)
+
+            print('done')
+            
+            test_predict = strides_test[0][1]
+            min_predict = np.min(test_predict[:,1])
+            max_predict = np.max(test_predict[:,1])
+
+            import copy
+            
+            # technically shouldn't be necessary for the HMM similarity measure, but useful for comparing hidden state
+            # sequence predictions and plotting to align the HMM states and emissions matrices
+            def align_states(trained_hmm_model, roll_amount=0):
+                new_hmm = copy.deepcopy(trained_hmm_model)
+                array_order = np.roll(np.arange(num_states), roll_amount)
+
+                new_hmm.model.transmat_ = new_hmm.model.transmat_[array_order,: ]
+                for i, row in enumerate(new_hmm.model.transmat_):
+                    new_hmm.model.transmat_[i] = np.roll(new_hmm.model.transmat_[i], roll_amount)
+
+                new_hmm.model.means_ = new_hmm.model.means_[array_order, :]
+                new_hmm.model.covars_ = new_hmm.model.covars_[array_order, :]
+                new_hmm.model.startprob_ = new_hmm.model.startprob_[array_order]
+                return new_hmm 
+
+            pred_vals = np.ones(num_states)
+            for i in range(num_states):
+                pred_vals[i] = min_predict + ((i * (max_predict - min_predict)) / (num_states - 1))
+
+            roll_amounts = {}
+            match_trials = {}
+
+            for idx, group in enumerate(raw_sensor):
+                roll_amounts[idx] = [0 for i in range(num_models_train)]
+                match_trials[idx] = 0
+
+            shift_all = 0
+        
+            
+            def find_best_alignment(hmm_1, hmm_2, test_stride, n_states):
+                min_distance = 9999999
+                best_roll = 0
+
+                for j in range(n_states):
+                    new_hmm = align_states(hmm_2, j)
+                    prediction_1 = hmm_1.model.predict(test_stride)
+                    prediction_2 = new_hmm.model.predict(test_stride)
+
+                    distance = np.sum((prediction_1 - prediction_2) ** 2)
+                    if (distance < min_distance):
+                        min_distance = distance
+                        best_roll = j
+
+                return best_roll
+
+            predictions = {}
+            hmm_models_aligned_states = {}
+            for idx, group in enumerate(raw_sensor):
+                predictions[idx] = []
+                hmm_models_aligned_states[idx] = []
+                match_trials[idx] = find_best_alignment(hmm_models[0][0], hmm_models[idx][0], test_predict, num_states)
+
+                for j in range(num_models_train):
+                    roll_amounts[idx][j] = find_best_alignment(hmm_models[idx][0], hmm_models[idx][j], test_predict, num_states) + match_trials[idx]
+                    # roll_amounts[idx][j] = 0
+                    hmm_models_aligned_states[idx].append(align_states(hmm_models[idx][j], roll_amounts[idx][j] + shift_all))
+                    predictions[idx].append(hmm_models_aligned_states[idx][-1].model.predict(test_predict))
+
+            q_matrix = np.zeros((num_states, num_states))
+            div_scores = np.zeros((num_states, num_states))
+
+            # i and j iterate over the trial types.
+            # compare all permutations between HMMs in trial_types[i] and trial_types[j] to compute a mean HMM-SM similarity
+            # between the two symmetry ranges. If i and j are the same (e.g., comparing within a symmetry range), don't compare
+            # HMM to itself
+            
+            for i, group in enumerate(raw_sensor):
+                # print()
+                for j, group in enumerate(raw_sensor):
+                    sum_dif = 0
+                    count = 0
+                    for k in range(num_models_train):
+                        if(i == j):
+                            indices = [a for a in range(num_models_train) if (not a == k)]
+                        else:
+                            indices = np.arange(num_models_train)
+                        for m in indices:
+                            x = calculate_state_correspondence_matrix(hmm_models_aligned_states[i][k], hmm_models_aligned_states[j][m], num_states)
+                            sum_dif = sum_dif + calculate_gini_index(x, num_states)
+                            count = count+1
+
+                    # log average HMM-SM similarity
+                    mean_dif = sum_dif / count
+                    print('%s - %s  :  %.5f' % (ordered_group_means[i], ordered_group_means[j], mean_dif))
+                    
+                    
