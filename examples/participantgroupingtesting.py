@@ -417,7 +417,7 @@ for participant in participant_list:
             ordered_group_means = group_means[::-1]
 
         for k, group in enumerate(ordered_groups):
-            print(f"Group {i+1}: {len(group)} (Mean: {np.mean(group) if group else 'N/A'})")
+            print(f"Group {k+1}: {len(group)} (Mean: {np.mean(group) if group else 'N/A'})")
             percentdiff = (np.mean(group)-np.mean(ordered_groups[0]))/np.mean(ordered_groups[0])*100
                 #print(f"Percent diff between groups = {round(percentdiff,3)}")
         
@@ -438,9 +438,9 @@ for participant in participant_list:
             # Split each array in the sublist
             for array in sublist:
                 split_arrays = np.split(array, [6, 18], axis=1)  # Split the array into 40x6, 40x12, 40x12 parts
-                sublist_40x6.append(signal.filtfilt(b20, a20, split_arrays[0], axis=0)) #Filter individual gait cycles and split them (first 6, next 12, next 12)
-                sublist_40x12_1.append(signal.filtfilt(b20, a20, split_arrays[1], axis=0))
-                sublist_40x12_2.append(signal.filtfilt(b20, a20, split_arrays[2], axis=0))
+                sublist_40x6.append(split_arrays[0]) #Filter individual gait cycles and split them (first 6, next 12, next 12)
+                sublist_40x12_1.append(split_arrays[1])
+                sublist_40x12_2.append(split_arrays[2])
             
             # Append the split sublists to the main lists
             gaitcycles_40x6.append(sublist_40x6)
@@ -501,18 +501,15 @@ for participant in participant_list:
             strides_test_flat = {}
             strides_train = {}
             strides_test = {}
-
             hmm_models = {}
-            num_models_train = 10 
-            
             resize_len = 40
-            
-            concat_strides = {}
             strides_to_concat = 10
-            num_states=3 #Changed from 5 to 2
+            num_states= 5 #Changed from 5 to 2
             train_iterations = 300 
             train_tolerance = 1e-2
-
+            num_models_train = 2
+ 
+            
             # concat_strides = {}  
 
             # # Process each group in raw_sensor
@@ -536,11 +533,19 @@ for participant in participant_list:
                 concat_strides[idx] = signal.filtfilt(b20, a20, concat_strides[idx], axis=1)
                 
             
-            hmm_models = {}        
+            hmm_models = {}  
+                
+              
             for idx, group in enumerate(raw_sensor):
                 
+                num_models_training = num_models_train 
                 hmm_models[idx] = []
-                for j in range(num_models_train):
+                
+                if num_models_train == 1 and idx == 0:
+                    #If only doing a single attempt, then two models should be trained for the first group (one as reference, and one to test with)
+                    num_models_training = 2
+                
+                for j in range(num_models_training):
                     train_forward_model = True
                     k = 0
                     
@@ -548,7 +553,7 @@ for participant in participant_list:
                         print('Train Attempt ', k+1, end="\r", flush=True)
                         
                         if(j > -1):
-                            np.random.shuffle(concat_strides)
+                            np.random.shuffle(concat_strides[idx])
                             
                         # flatten sequence for hmmlearn train function
                         strides_sequence_flattened = concat_strides[idx].reshape((concat_strides[idx].shape[0] * concat_strides[idx].shape[1], -1))
@@ -587,18 +592,15 @@ for participant in participant_list:
                         if(valid_rows == num_states):
                             train_forward_model = False
                         k = k + 1
-
                     hmm_models[idx].append(hmm_model)
 
             print('done')
             
-            test_predict = strides_test[0][1] #First element of idx = 0
+            test_predict = strides_test[0][1] #2nd element of idx = 0
             min_predict = np.min(test_predict[:,1])
             max_predict = np.max(test_predict[:,1])
-
             
-            # technically shouldn't be necessary for the HMM similarity measure, but useful for comparing hidden state
-            # sequence predictions and plotting to align the HMM states and emissions matrices
+            
             def align_states(trained_hmm_model, roll_amount=0):
                 new_hmm = copy.deepcopy(trained_hmm_model)
                 array_order = np.roll(np.arange(num_states), roll_amount)
@@ -613,9 +615,10 @@ for participant in participant_list:
                 return new_hmm 
 
             pred_vals = np.ones(num_states)
+            
             for i in range(num_states):
                 pred_vals[i] = min_predict + ((i * (max_predict - min_predict)) / (num_states - 1))
-
+        
             roll_amounts = {}
             match_trials = {}
 
@@ -643,41 +646,58 @@ for participant in participant_list:
 
             predictions = {}
             hmm_models_aligned_states = {}
+            
             for idx, group in enumerate(raw_sensor):
+                
                 predictions[idx] = []
                 hmm_models_aligned_states[idx] = []
                 match_trials[idx] = find_best_alignment(hmm_models[0][0], hmm_models[idx][0], test_predict, num_states)
-
-                for j in range(num_models_train):
+                
+                roll_amounts[idx] = [0] * len(hmm_models[idx]) #Can now handle different lengths of trained models 
+                
+                for j in range(len(hmm_models[idx])):
                     roll_amounts[idx][j] = find_best_alignment(hmm_models[idx][0], hmm_models[idx][j], test_predict, num_states) + match_trials[idx]
                     # roll_amounts[idx][j] = 0
                     hmm_models_aligned_states[idx].append(align_states(hmm_models[idx][j], roll_amounts[idx][j] + shift_all))
                     predictions[idx].append(hmm_models_aligned_states[idx][-1].model.predict(test_predict))
-
-            q_matrix = np.zeros((num_states, num_states))
-            div_scores = np.zeros((num_states, num_states))
-
-            # i and j iterate over the trial types.
-            # compare all permutations between HMMs in trial_types[i] and trial_types[j] to compute a mean HMM-SM similarity
-            # between the two symmetry ranges. If i and j are the same (e.g., comparing within a symmetry range), don't compare
-            # HMM to itself
-            
-            for i, group in enumerate(raw_sensor):
+                        
+                        
+            if num_models_train == 1:
                 for j, group in enumerate(raw_sensor):
                     sum_dif = 0
                     count = 0
-                    for k in range(num_models_train):
-                        if(i == j):
-                            indices = [a for a in range(num_models_train) if (not a == k)]
-                        else:
-                            indices = np.arange(num_models_train)
-                        for m in indices:
-                            x = calculate_state_correspondence_matrix(hmm_models_aligned_states[i][k], hmm_models_aligned_states[j][m], num_states)
-                            sum_dif = sum_dif + calculate_gini_index(x, num_states)
-                            count = count+1
-
-                    # log average HMM-SM similarity
-                    mean_dif = sum_dif / count
-                    print('%s - %s  :  %.5f' % (ordered_group_means[i], ordered_group_means[j], mean_dif))
+                    if (j == 0):
+                        m = 1 #only want the other trained model
+                    else:
+                        m = 0
+                    x = calculate_state_correspondence_matrix(hmm_models_aligned_states[0][0], hmm_models_aligned_states[j][m], num_states)
+                    sum_dif = sum_dif + calculate_gini_index(x, num_states)
+                    # log HMM-SM similarity
+                    print('%s - %s  :  %.5f' % (ordered_group_means[0], ordered_group_means[j], sum_dif))
                     
+                    
+            else: #If averaging a larger set (multiple HMMs trained)
+                # i and j iterate over the trial types.
+                # compare all permutations between HMMs in trial_types[i] and trial_types[j] to compute a mean HMM-SM similarity
+                # between the two symmetry ranges. If i and j are the same (e.g., comparing within a symmetry range), don't compare
+                # HMM to itself
+                
+                for i, group in enumerate(raw_sensor):
+                    for j, group in enumerate(raw_sensor):
+                        sum_dif = 0
+                        count = 0
+                        for k in range(num_models_train):
+                            if(i == j):
+                                indices = [a for a in range(num_models_train) if (not a == k)]
+                            else:
+                                indices = np.arange(num_models_train)
+                            for m in indices:
+                                x = calculate_state_correspondence_matrix(hmm_models_aligned_states[i][k], hmm_models_aligned_states[j][m], num_states)
+                                sum_dif = sum_dif + calculate_gini_index(x, num_states)
+                                count = count+1
+
+                        # log average HMM-SM similarity
+                        mean_dif = sum_dif / count
+                        print('%s - %s  :  %.5f' % (ordered_group_means[i], ordered_group_means[j], mean_dif))
+                        
                     
