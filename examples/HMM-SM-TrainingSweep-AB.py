@@ -460,7 +460,7 @@ for participant_of_interest in list(reversed(list(sym_range_parts.keys()))):
         plt.xlim([0.8, 1.2])
         plt.show()
 
-'''
+
     sym_ranges = sym_range_parts[participant_of_interest]
     
     sym_range_strides = {}              # store gait cycles for each of STSR ranges
@@ -522,8 +522,8 @@ for participant_of_interest in list(reversed(list(sym_range_parts.keys()))):
 
             concat_strides[trial_type] = np.array(concat_strides[trial_type])
             concat_strides[trial_type] = signal.filtfilt(b20, a20, concat_strides[trial_type], axis=1)
-
-
+            
+            
         strides_train_flat = {}
         strides_test_flat = {}
         strides_train = {}
@@ -532,7 +532,7 @@ for participant_of_interest in list(reversed(list(sym_range_parts.keys()))):
         hmm_models = {}
         num_models_train = 10
 
-        # for each symmetry range, train num_models_train HMMs on respective training data, stored in hmm_models dict
+        #  for each symmetry range, train num_models_train HMMs on respective training data, stored in hmm_models dict
         for trial_type in trial_types:
             print('Training %s models...' % (trial_type))
             hmm_models[trial_type] = []
