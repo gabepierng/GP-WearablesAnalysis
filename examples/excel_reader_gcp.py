@@ -38,8 +38,8 @@ import scipy.interpolate as interp
 import scipy
 import sklearn.metrics as metrics
 
-# plot_colors = ['black', 'red', 'blue', 'green']
-plot_colors = ['blue', 'orange', 'green', 'red', 'purple', 'brown', 'pink', 'grey']
+plot_colors = ['black', 'red', 'blue', 'green']
+#plot_colors = ['blue', 'orange', 'green', 'red', 'purple', 'brown', 'pink', 'grey']
 sides = ['Right', 'Left']
 joint_planes = ['Abd/Add', 'Int/Ext Rot', 'Flex/Ext']
 axis_planes = ['x', 'y', 'z']
@@ -104,14 +104,14 @@ Input:  strides = list of strides to plot (if confidence plot, must be 2d reshap
         signal_axis = which axis of signal to plot (0:X, 1:Y, 2:Z)
 '''
 def visualize_strides(strides, fig_ax, signal_axis, trial_num, confidence_plot = True):
-
+    
     if(confidence_plot):
 #         plot_signals = trial_avg_and_CI(strides[:,:,signal_axis])
         plot_signals = trial_avg_and_CI(strides[:,:])
         x = np.linspace(0, 100, strides.shape[1])
         fig_ax.plot(x, plot_signals[0], color=plot_colors[trial_num])
         fig_ax.fill_between(x, plot_signals[1], plot_signals[2], color=plot_colors[trial_num], alpha=0.2)
-
+        
     else:
         plt.ylabel('Degrees (º)')
 
@@ -123,7 +123,7 @@ def visualize_strides(strides, fig_ax, signal_axis, trial_num, confidence_plot =
                 plt.draw()
                 plt.pause(0.001)
 
-    # plt.show()
+    #plt.show()
 
 
 '''
@@ -205,7 +205,7 @@ class XsensGaitDataParser:
                             foot position vector, and frame rate MVN samples at for trial
     Output: Spatiotemporal parameters
     '''
-    def calc_spatio_temp_params(self, gait_events, pelvis_position, foot_position, frame_rate, knee_angles, hip_angles):
+    def calc_spatio_temp_params(self, gait_events, pelvis_position, foot_position, frame_rate, knee_angles, hip_angles,ankle_angles):
         # inputs are Nx3 vectors with 3D position coordinates
         def calc_distances(positions1, positions2):
             # can generally ignore z-axis, remove before doing calculations
@@ -288,8 +288,11 @@ class XsensGaitDataParser:
             hip_ROMs = np.array([np.array([np.max(hip_angles[0][stride[0]:stride[2]], axis=0) - np.min(hip_angles[0][stride[0]:stride[2]], axis=0),
                             np.max(hip_angles[1][stride[3]:stride[5]], axis=0) - np.min(hip_angles[1][stride[3]:stride[5]], axis=0)]) for stride in r_to_l_strides.T])
             
+            ankle_ROMs = np.array([np.array([np.max(ankle_angles[0][stride[0]:stride[2]], axis=0) - np.min(ankle_angles[0][stride[0]:stride[2]], axis=0),
+                            np.max(ankle_angles[1][stride[3]:stride[5]], axis=0) - np.min(ankle_angles[1][stride[3]:stride[5]], axis=0)]) for stride in r_to_l_strides.T])
 
-            return [double_stance_support, step_length_avg, step_length_std, step_lengths, stride_length_SR, stance_time_ratio, knee_ROMs, knee_ROM_SR, hip_ROMs, stride_lengths]
+
+            return [double_stance_support, step_length_avg, step_length_std, step_lengths, stride_length_SR, stance_time_ratio, knee_ROMs, knee_ROM_SR, hip_ROMs, stride_lengths, ankle_ROMs]
             # return [double_stance_support, step_length_avg, step_length_std, step_lengths, stride_length_SR, stance_times, knee_ROMs, knee_ROM_SR, hip_ROMs]
 
         r_gait_events = gait_events[0]
@@ -378,10 +381,11 @@ class XsensGaitDataParser:
         knee_ROM_SR = step_based_params[7]
         hip_ROMs = step_based_params[8]
         stride_lengths = step_based_params[9]
+        ankle_ROMs = step_based_params[10]
 
         spatio_temp_params = [stance_time_ratio, swing_time_ratio, double_stance_support,
                             step_length_avg, stride_length_avg, stride_time_avg, cadence, 
-                            speed, stance_time_avg, stance_time_std, step_lengths, stride_length_SR, stance_time_ratio_ind, knee_ROMs, hip_ROMs, stride_lengths,
+                            speed, stance_time_avg, stance_time_std, step_lengths, stride_length_SR, stance_time_ratio_ind, knee_ROMs, hip_ROMs, ankle_ROMs, stride_lengths,
                             ind_speed, ind_cadence]
 
         return spatio_temp_params
@@ -763,7 +767,7 @@ class XsensGaitDataParser:
             partitioned_mvn_data['gyro_data'][5] = [stride for stride in self.partitioned_mvn_data['gyro_data'][5] if np.max(stride[:,1]) - np.min(stride[:,1]) < 4.5]
         
         # print('Calculating spatiotemporal parameters...')
-        self.gait_params['spatio_temp'] = self.calc_spatio_temp_params(self.gait_events, pelvis_position, foot_position, frame_rate, knee_angles, hip_angles)
+        self.gait_params['spatio_temp'] = self.calc_spatio_temp_params(self.gait_events, pelvis_position, foot_position, frame_rate, knee_angles, hip_angles, ankle_angles)
 
         # print('Calculating kinematic parameters...')
         self.gait_params['kinematics'] = self.calc_kinematic_params(self.gait_events, pelvis_euler_orientation, hip_angles, knee_angles, ankle_angles, sternum_euler_orientation)
