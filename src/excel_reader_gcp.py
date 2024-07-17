@@ -38,8 +38,8 @@ import scipy.interpolate as interp
 import scipy
 import sklearn.metrics as metrics
 
-# plot_colors = ['black', 'red', 'blue', 'green']
-plot_colors = ['blue', 'orange', 'green', 'red', 'purple', 'brown', 'pink', 'grey']
+plot_colors = ['black', 'red', 'blue', 'green']
+#plot_colors = ['blue', 'orange', 'green', 'red', 'purple', 'brown', 'pink', 'grey']
 sides = ['Right', 'Left']
 joint_planes = ['Abd/Add', 'Int/Ext Rot', 'Flex/Ext']
 axis_planes = ['x', 'y', 'z']
@@ -111,7 +111,7 @@ def visualize_strides(strides, fig_ax, signal_axis, trial_num, confidence_plot =
         x = np.linspace(0, 100, strides.shape[1])
         fig_ax.plot(x, plot_signals[0], color=plot_colors[trial_num])
         fig_ax.fill_between(x, plot_signals[1], plot_signals[2], color=plot_colors[trial_num], alpha=0.2)
-
+        plt.show()
     else:
         plt.ylabel('Degrees (º)')
 
@@ -123,7 +123,7 @@ def visualize_strides(strides, fig_ax, signal_axis, trial_num, confidence_plot =
                 plt.draw()
                 plt.pause(0.001)
 
-    # plt.show()
+    plt.show()
 
 
 '''

@@ -1,0 +1,361 @@
+FilePath,Sensor,GaitParam,Algorithm,Participant,X,Y
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,pelvis,STSR,DTW,LLPU_P01,0.907304056,11.66815593
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,pelvis,STSR,DTW,LLPU_P01,0.906196007,11.88034276
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,pelvis,STSR,DTW,LLPU_P01,0.934061937,11.47329366
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,pelvis,STSR,DTW,LLPU_P01,0.961844694,12.43141845
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,pelvis,STSR,MDP,LLPU_P01,0.907304056,0.886383341
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,pelvis,STSR,MDP,LLPU_P01,0.906196007,0.911534387
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,pelvis,STSR,MDP,LLPU_P01,0.934061937,0.84026993
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,pelvis,STSR,MDP,LLPU_P01,0.961844694,0.810179554
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,pelvis,STSR,HMM-SM,LLPU_P01,0.907 - 0.907,0.595964838
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,pelvis,STSR,HMM-SM,LLPU_P01,0.907 - 0.906,0.492832254
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,pelvis,STSR,HMM-SM,LLPU_P01,0.907 - 0.934,0.483927572
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,pelvis,STSR,HMM-SM,LLPU_P01,0.907 - 0.962,0.463828816
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,upper,STSR,DTW,LLPU_P01,0.907304056,79.14002037
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,upper,STSR,DTW,LLPU_P01,0.906196007,81.05606657
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,upper,STSR,DTW,LLPU_P01,0.934061937,77.98844805
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,upper,STSR,DTW,LLPU_P01,0.961844694,84.10471205
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,upper,STSR,MDP,LLPU_P01,0.907304056,5.133990544
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,upper,STSR,MDP,LLPU_P01,0.906196007,5.052222169
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,upper,STSR,MDP,LLPU_P01,0.934061937,5.146801415
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,upper,STSR,MDP,LLPU_P01,0.961844694,4.989886377
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,upper,STSR,HMM-SM,LLPU_P01,0.907 - 0.907,0.655314458
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,upper,STSR,HMM-SM,LLPU_P01,0.907 - 0.906,0.64437728
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,upper,STSR,HMM-SM,LLPU_P01,0.907 - 0.934,0.591798934
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,upper,STSR,HMM-SM,LLPU_P01,0.907 - 0.962,0.587794965
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,lower,STSR,DTW,LLPU_P01,0.907304056,55.48922082
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,lower,STSR,DTW,LLPU_P01,0.906196007,56.87222183
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,lower,STSR,DTW,LLPU_P01,0.934061937,56.66039704
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,lower,STSR,DTW,LLPU_P01,0.961844694,59.84710555
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,lower,STSR,MDP,LLPU_P01,0.907304056,3.889211758
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,lower,STSR,MDP,LLPU_P01,0.906196007,4.221861821
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,lower,STSR,MDP,LLPU_P01,0.934061937,3.798847188
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,lower,STSR,MDP,LLPU_P01,0.961844694,3.880914335
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,lower,STSR,HMM-SM,LLPU_P01,0.907 - 0.907,0.713791853
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,lower,STSR,HMM-SM,LLPU_P01,0.907 - 0.906,0.737483119
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,lower,STSR,HMM-SM,LLPU_P01,0.907 - 0.934,0.755783361
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,lower,STSR,HMM-SM,LLPU_P01,0.907 - 0.962,0.679439049
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,pelvis,STSR,DTW,LLPU_P02,1.022912364,14.74285627
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,pelvis,STSR,DTW,LLPU_P02,1.02398064,15.08372191
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,pelvis,STSR,DTW,LLPU_P02,1.049868343,14.79816654
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,pelvis,STSR,DTW,LLPU_P02,1.078794593,15.71448947
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,pelvis,STSR,MDP,LLPU_P02,1.022912364,0.87420104
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,pelvis,STSR,MDP,LLPU_P02,1.02398064,0.860444643
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,pelvis,STSR,MDP,LLPU_P02,1.049868343,0.912310395
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,pelvis,STSR,MDP,LLPU_P02,1.078794593,0.913729526
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,pelvis,STSR,HMM-SM,LLPU_P02,1.023 - 1.023,0.656933376
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,pelvis,STSR,HMM-SM,LLPU_P02,1.023 - 1.024,0.629987658
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,pelvis,STSR,HMM-SM,LLPU_P02,1.023 - 1.05,0.646587078
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,pelvis,STSR,HMM-SM,LLPU_P02,1.023 - 1.079,0.627095719
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,upper,STSR,DTW,LLPU_P02,1.022912364,60.17441993
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,upper,STSR,DTW,LLPU_P02,1.02398064,61.34713002
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,upper,STSR,DTW,LLPU_P02,1.049868343,59.93667331
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,upper,STSR,DTW,LLPU_P02,1.078794593,63.39488766
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,upper,STSR,MDP,LLPU_P02,1.022912364,4.10566795
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,upper,STSR,MDP,LLPU_P02,1.02398064,3.738301909
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,upper,STSR,MDP,LLPU_P02,1.049868343,4.196150066
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,upper,STSR,MDP,LLPU_P02,1.078794593,4.343756681
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,upper,STSR,HMM-SM,LLPU_P02,1.023 - 1.023,0.73471943
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,upper,STSR,HMM-SM,LLPU_P02,1.023 - 1.024,0.703444609
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,upper,STSR,HMM-SM,LLPU_P02,1.023 - 1.05,0.687983167
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,upper,STSR,HMM-SM,LLPU_P02,1.023 - 1.079,0.678201497
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,lower,STSR,DTW,LLPU_P02,1.022912364,41.49924805
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,lower,STSR,DTW,LLPU_P02,1.02398064,41.8459133
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,lower,STSR,DTW,LLPU_P02,1.049868343,41.6140287
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,lower,STSR,DTW,LLPU_P02,1.078794593,44.40689465
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,lower,STSR,MDP,LLPU_P02,1.022912364,3.102947745
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,lower,STSR,MDP,LLPU_P02,1.02398064,2.893769512
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,lower,STSR,MDP,LLPU_P02,1.049868343,3.142489517
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,lower,STSR,MDP,LLPU_P02,1.078794593,3.387100155
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,lower,STSR,HMM-SM,LLPU_P02,1.023 - 1.023,0.865344126
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,lower,STSR,HMM-SM,LLPU_P02,1.023 - 1.024,0.790963698
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,lower,STSR,HMM-SM,LLPU_P02,1.023 - 1.05,0.741504863
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,lower,STSR,HMM-SM,LLPU_P02,1.023 - 1.079,0.792505699
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,pelvis,STSR,DTW,LLPU_P03,1.022484215,9.742027125
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,pelvis,STSR,DTW,LLPU_P03,1.023056357,9.596731182
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,pelvis,STSR,DTW,LLPU_P03,1.05253788,9.510446817
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,pelvis,STSR,DTW,LLPU_P03,1.079895636,9.630187309
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,pelvis,STSR,MDP,LLPU_P03,1.022484215,0.589524646
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,pelvis,STSR,MDP,LLPU_P03,1.023056357,0.552289129
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,pelvis,STSR,MDP,LLPU_P03,1.05253788,0.557542203
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,pelvis,STSR,MDP,LLPU_P03,1.079895636,0.584865093
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,pelvis,STSR,HMM-SM,LLPU_P03,1.022 - 1.022,0.705930143
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,pelvis,STSR,HMM-SM,LLPU_P03,1.022 - 1.023,0.674764788
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,pelvis,STSR,HMM-SM,LLPU_P03,1.022 - 1.053,0.59204617
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,pelvis,STSR,HMM-SM,LLPU_P03,1.022 - 1.08,0.545294286
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,upper,STSR,DTW,LLPU_P03,1.022484215,42.0127782
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,upper,STSR,DTW,LLPU_P03,1.023056357,40.88226051
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,upper,STSR,DTW,LLPU_P03,1.05253788,41.82194444
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,upper,STSR,DTW,LLPU_P03,1.079895636,42.14751167
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,upper,STSR,MDP,LLPU_P03,1.022484215,2.369827979
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,upper,STSR,MDP,LLPU_P03,1.023056357,2.339702616
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,upper,STSR,MDP,LLPU_P03,1.05253788,2.313047526
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,upper,STSR,MDP,LLPU_P03,1.079895636,2.607163154
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,upper,STSR,HMM-SM,LLPU_P03,1.022 - 1.022,0.678439026
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,upper,STSR,HMM-SM,LLPU_P03,1.022 - 1.023,0.621348762
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,upper,STSR,HMM-SM,LLPU_P03,1.022 - 1.053,0.626521801
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,upper,STSR,HMM-SM,LLPU_P03,1.022 - 1.08,0.627965889
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,lower,STSR,DTW,LLPU_P03,1.022484215,37.53363792
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,lower,STSR,DTW,LLPU_P03,1.023056357,36.64640459
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,lower,STSR,DTW,LLPU_P03,1.05253788,37.23298593
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,lower,STSR,DTW,LLPU_P03,1.079895636,38.11073206
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,lower,STSR,MDP,LLPU_P03,1.022484215,2.205073905
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,lower,STSR,MDP,LLPU_P03,1.023056357,2.093587111
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,lower,STSR,MDP,LLPU_P03,1.05253788,2.204117713
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,lower,STSR,MDP,LLPU_P03,1.079895636,2.383994309
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,lower,STSR,HMM-SM,LLPU_P03,1.022 - 1.022,0.887543328
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,lower,STSR,HMM-SM,LLPU_P03,1.022 - 1.023,0.896149508
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,lower,STSR,HMM-SM,LLPU_P03,1.022 - 1.053,0.889974686
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,lower,STSR,HMM-SM,LLPU_P03,1.022 - 1.08,0.761198184
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,pelvis,STSR,DTW,LLPU_P04,1.060777318,12.91232521
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,pelvis,STSR,DTW,LLPU_P04,1.062544954,13.20071265
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,pelvis,STSR,DTW,LLPU_P04,1.089811673,13.11373528
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,pelvis,STSR,DTW,LLPU_P04,1.117860715,13.33552969
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,pelvis,STSR,MDP,LLPU_P04,1.060777318,0.78036282
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,pelvis,STSR,MDP,LLPU_P04,1.062544954,0.809522346
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,pelvis,STSR,MDP,LLPU_P04,1.089811673,0.779716928
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,pelvis,STSR,MDP,LLPU_P04,1.117860715,0.798230077
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,pelvis,STSR,HMM-SM,LLPU_P04,1.061 - 1.061,0.75236161
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,pelvis,STSR,HMM-SM,LLPU_P04,1.061 - 1.063,0.705248277
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,pelvis,STSR,HMM-SM,LLPU_P04,1.061 - 1.09,0.754066784
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,pelvis,STSR,HMM-SM,LLPU_P04,1.061 - 1.118,0.718795453
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,upper,STSR,DTW,LLPU_P04,1.060777318,68.51022649
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,upper,STSR,DTW,LLPU_P04,1.062544954,73.74785767
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,upper,STSR,DTW,LLPU_P04,1.089811673,71.84385379
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,upper,STSR,DTW,LLPU_P04,1.117860715,71.27635784
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,upper,STSR,MDP,LLPU_P04,1.060777318,4.329095599
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,upper,STSR,MDP,LLPU_P04,1.062544954,4.767834203
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,upper,STSR,MDP,LLPU_P04,1.089811673,4.556350514
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,upper,STSR,MDP,LLPU_P04,1.117860715,4.320945489
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,upper,STSR,HMM-SM,LLPU_P04,1.061 - 1.061,0.60205168
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,upper,STSR,HMM-SM,LLPU_P04,1.061 - 1.063,0.606845031
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,upper,STSR,HMM-SM,LLPU_P04,1.061 - 1.09,0.614585535
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,upper,STSR,HMM-SM,LLPU_P04,1.061 - 1.118,0.532485418
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,lower,STSR,DTW,LLPU_P04,1.060777318,44.64500821
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,lower,STSR,DTW,LLPU_P04,1.062544954,47.42246881
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,lower,STSR,DTW,LLPU_P04,1.089811673,46.88658734
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,lower,STSR,DTW,LLPU_P04,1.117860715,47.91893291
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,lower,STSR,MDP,LLPU_P04,1.060777318,3.137408719
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,lower,STSR,MDP,LLPU_P04,1.062544954,3.38386533
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,lower,STSR,MDP,LLPU_P04,1.089811673,3.283207466
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,lower,STSR,MDP,LLPU_P04,1.117860715,3.173068646
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,lower,STSR,HMM-SM,LLPU_P04,1.061 - 1.061,0.773068343
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,lower,STSR,HMM-SM,LLPU_P04,1.061 - 1.063,0.770059328
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,lower,STSR,HMM-SM,LLPU_P04,1.061 - 1.09,0.798128894
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,lower,STSR,HMM-SM,LLPU_P04,1.061 - 1.118,0.768972655
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,pelvis,STSR,DTW,LLPU_P05,1.02329373,17.93734478
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,pelvis,STSR,DTW,LLPU_P05,1.023295491,17.55846759
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,pelvis,STSR,DTW,LLPU_P05,1.051488715,17.79827396
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,pelvis,STSR,DTW,LLPU_P05,1.082679235,18.0838203
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,pelvis,STSR,MDP,LLPU_P05,1.02329373,0.946256916
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,pelvis,STSR,MDP,LLPU_P05,1.023295491,0.930182504
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,pelvis,STSR,MDP,LLPU_P05,1.051488715,1.049318497
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,pelvis,STSR,MDP,LLPU_P05,1.082679235,0.920641226
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,pelvis,STSR,HMM-SM,LLPU_P05,1.023 - 1.023,0.68624181
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,pelvis,STSR,HMM-SM,LLPU_P05,1.023 - 1.023,0.589697678
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,pelvis,STSR,HMM-SM,LLPU_P05,1.023 - 1.051,0.575100468
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,pelvis,STSR,HMM-SM,LLPU_P05,1.023 - 1.083,0.589129054
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,upper,STSR,DTW,LLPU_P05,1.02329373,68.27228988
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,upper,STSR,DTW,LLPU_P05,1.023295491,66.70176409
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,upper,STSR,DTW,LLPU_P05,1.051488715,68.44013622
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,upper,STSR,DTW,LLPU_P05,1.082679235,70.17627858
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,upper,STSR,MDP,LLPU_P05,1.02329373,4.354038226
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,upper,STSR,MDP,LLPU_P05,1.023295491,4.255741147
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,upper,STSR,MDP,LLPU_P05,1.051488715,4.264732678
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,upper,STSR,MDP,LLPU_P05,1.082679235,4.328780065
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,upper,STSR,HMM-SM,LLPU_P05,1.023 - 1.023,0.843116912
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,upper,STSR,HMM-SM,LLPU_P05,1.023 - 1.023,0.902316286
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,upper,STSR,HMM-SM,LLPU_P05,1.023 - 1.051,0.700490073
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,upper,STSR,HMM-SM,LLPU_P05,1.023 - 1.083,0.68749678
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,lower,STSR,DTW,LLPU_P05,1.02329373,38.01010641
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,lower,STSR,DTW,LLPU_P05,1.023295491,37.31490228
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,lower,STSR,DTW,LLPU_P05,1.051488715,37.67019159
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,lower,STSR,DTW,LLPU_P05,1.082679235,39.40315568
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,lower,STSR,MDP,LLPU_P05,1.02329373,2.695446375
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,lower,STSR,MDP,LLPU_P05,1.023295491,2.467588711
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,lower,STSR,MDP,LLPU_P05,1.051488715,2.813357655
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,lower,STSR,MDP,LLPU_P05,1.082679235,3.056052904
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,lower,STSR,HMM-SM,LLPU_P05,1.023 - 1.023,0.784264829
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,lower,STSR,HMM-SM,LLPU_P05,1.023 - 1.023,0.628928678
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,lower,STSR,HMM-SM,LLPU_P05,1.023 - 1.051,0.675022946
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,lower,STSR,HMM-SM,LLPU_P05,1.023 - 1.083,0.682581624
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,pelvis,STSR,DTW,LLPU_P06,1.064824861,17.31511638
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,pelvis,STSR,DTW,LLPU_P06,1.062279499,17.42582904
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,pelvis,STSR,DTW,LLPU_P06,1.09176044,17.71710741
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,pelvis,STSR,DTW,LLPU_P06,1.1230813,17.83259349
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,pelvis,STSR,MDP,LLPU_P06,1.064824861,0.969434093
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,pelvis,STSR,MDP,LLPU_P06,1.062279499,0.973174442
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,pelvis,STSR,MDP,LLPU_P06,1.09176044,0.953511026
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,pelvis,STSR,MDP,LLPU_P06,1.1230813,1.037275683
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,pelvis,STSR,HMM-SM,LLPU_P06,1.065 - 1.065,0.67713305
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,pelvis,STSR,HMM-SM,LLPU_P06,1.065 - 1.062,0.701601705
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,pelvis,STSR,HMM-SM,LLPU_P06,1.065 - 1.092,0.688091317
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,pelvis,STSR,HMM-SM,LLPU_P06,1.065 - 1.123,0.695354316
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,upper,STSR,DTW,LLPU_P06,1.064824861,88.61346785
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,upper,STSR,DTW,LLPU_P06,1.062279499,88.51242629
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,upper,STSR,DTW,LLPU_P06,1.09176044,90.28632952
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,upper,STSR,DTW,LLPU_P06,1.1230813,88.90433842
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,upper,STSR,MDP,LLPU_P06,1.064824861,4.814600927
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,upper,STSR,MDP,LLPU_P06,1.062279499,5.04371945
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,upper,STSR,MDP,LLPU_P06,1.09176044,4.829035569
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,upper,STSR,MDP,LLPU_P06,1.1230813,5.071220402
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,upper,STSR,HMM-SM,LLPU_P06,1.065 - 1.065,0.707852675
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,upper,STSR,HMM-SM,LLPU_P06,1.065 - 1.062,0.553756667
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,upper,STSR,HMM-SM,LLPU_P06,1.065 - 1.092,0.596272149
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,upper,STSR,HMM-SM,LLPU_P06,1.065 - 1.123,0.592296732
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,lower,STSR,DTW,LLPU_P06,1.064824861,60.43945967
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,lower,STSR,DTW,LLPU_P06,1.062279499,60.0476823
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,lower,STSR,DTW,LLPU_P06,1.09176044,61.55856827
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,lower,STSR,DTW,LLPU_P06,1.1230813,62.18916024
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,lower,STSR,MDP,LLPU_P06,1.064824861,3.766890745
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,lower,STSR,MDP,LLPU_P06,1.062279499,3.874393228
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,lower,STSR,MDP,LLPU_P06,1.09176044,3.762379544
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,lower,STSR,MDP,LLPU_P06,1.1230813,4.148349935
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,lower,STSR,HMM-SM,LLPU_P06,1.065 - 1.065,0.82799012
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,lower,STSR,HMM-SM,LLPU_P06,1.065 - 1.062,0.827802477
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,lower,STSR,HMM-SM,LLPU_P06,1.065 - 1.092,0.729440633
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,lower,STSR,HMM-SM,LLPU_P06,1.065 - 1.123,0.737369434
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,pelvis,STSR,DTW,LLPU_P09,0.925192686,12.09361071
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,pelvis,STSR,DTW,LLPU_P09,0.92508679,12.37264778
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,pelvis,STSR,DTW,LLPU_P09,0.950357409,12.18753779
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,pelvis,STSR,DTW,LLPU_P09,0.980150838,13.05169856
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,pelvis,STSR,MDP,LLPU_P09,0.925192686,0.765256063
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,pelvis,STSR,MDP,LLPU_P09,0.92508679,0.791951332
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,pelvis,STSR,MDP,LLPU_P09,0.950357409,0.738866224
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,pelvis,STSR,MDP,LLPU_P09,0.980150838,0.76272731
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,pelvis,STSR,HMM-SM,LLPU_P09,0.925 - 0.925,0.586799209
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,pelvis,STSR,HMM-SM,LLPU_P09,0.925 - 0.925,0.596898312
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,pelvis,STSR,HMM-SM,LLPU_P09,0.925 - 0.95,0.524934444
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,pelvis,STSR,HMM-SM,LLPU_P09,0.925 - 0.98,0.508415897
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,upper,STSR,DTW,LLPU_P09,0.925192686,97.31290662
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,upper,STSR,DTW,LLPU_P09,0.92508679,97.75690403
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,upper,STSR,DTW,LLPU_P09,0.950357409,97.45115887
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,upper,STSR,DTW,LLPU_P09,0.980150838,105.7740519
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,upper,STSR,MDP,LLPU_P09,0.925192686,4.886930901
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,upper,STSR,MDP,LLPU_P09,0.92508679,5.065439161
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,upper,STSR,MDP,LLPU_P09,0.950357409,5.15487183
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,upper,STSR,MDP,LLPU_P09,0.980150838,4.771672187
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,upper,STSR,HMM-SM,LLPU_P09,0.925 - 0.925,0.544506274
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,upper,STSR,HMM-SM,LLPU_P09,0.925 - 0.925,0.553882173
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,upper,STSR,HMM-SM,LLPU_P09,0.925 - 0.95,0.511989527
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,upper,STSR,HMM-SM,LLPU_P09,0.925 - 0.98,0.577485706
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,lower,STSR,DTW,LLPU_P09,0.925192686,38.13961324
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,lower,STSR,DTW,LLPU_P09,0.92508679,39.0733851
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,lower,STSR,DTW,LLPU_P09,0.950357409,39.61345425
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,lower,STSR,DTW,LLPU_P09,0.980150838,44.13352275
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,lower,STSR,MDP,LLPU_P09,0.925192686,2.726948564
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,lower,STSR,MDP,LLPU_P09,0.92508679,2.896197715
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,lower,STSR,MDP,LLPU_P09,0.950357409,2.892786907
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,lower,STSR,MDP,LLPU_P09,0.980150838,3.246029018
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,lower,STSR,HMM-SM,LLPU_P09,0.925 - 0.925,0.779970097
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,lower,STSR,HMM-SM,LLPU_P09,0.925 - 0.925,0.788242766
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,lower,STSR,HMM-SM,LLPU_P09,0.925 - 0.95,0.686858425
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,lower,STSR,HMM-SM,LLPU_P09,0.925 - 0.98,0.746311526
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,pelvis,STSR,DTW,LLPU_P10,0.979260994,11.98431009
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,pelvis,STSR,DTW,LLPU_P10,0.980151401,12.08115913
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,pelvis,STSR,DTW,LLPU_P10,1.007592238,12.1437516
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,pelvis,STSR,DTW,LLPU_P10,1.038194475,11.18369395
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,pelvis,STSR,MDP,LLPU_P10,0.979260994,0.689870208
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,pelvis,STSR,MDP,LLPU_P10,0.980151401,0.688678467
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,pelvis,STSR,MDP,LLPU_P10,1.007592238,0.570975879
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,pelvis,STSR,MDP,LLPU_P10,1.038194475,0.573387226
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,pelvis,STSR,HMM-SM,LLPU_P10,0.979 - 0.979,0.609484273
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,pelvis,STSR,HMM-SM,LLPU_P10,0.979 - 0.98,0.638715582
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,pelvis,STSR,HMM-SM,LLPU_P10,0.979 - 1.008,0.637360073
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,pelvis,STSR,HMM-SM,LLPU_P10,0.979 - 1.038,0.630708229
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,upper,STSR,DTW,LLPU_P10,0.979260994,54.46856553
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,upper,STSR,DTW,LLPU_P10,0.980151401,54.23567727
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,upper,STSR,DTW,LLPU_P10,1.007592238,53.83411316
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,upper,STSR,DTW,LLPU_P10,1.038194475,55.01717107
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,upper,STSR,MDP,LLPU_P10,0.979260994,2.940866129
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,upper,STSR,MDP,LLPU_P10,0.980151401,3.034166578
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,upper,STSR,MDP,LLPU_P10,1.007592238,2.698135701
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,upper,STSR,MDP,LLPU_P10,1.038194475,2.881441052
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,upper,STSR,HMM-SM,LLPU_P10,0.979 - 0.979,0.691190246
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,upper,STSR,HMM-SM,LLPU_P10,0.979 - 0.98,0.734296426
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,upper,STSR,HMM-SM,LLPU_P10,0.979 - 1.008,0.767015417
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,upper,STSR,HMM-SM,LLPU_P10,0.979 - 1.038,0.781287734
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,lower,STSR,DTW,LLPU_P10,0.979260994,41.25592967
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,lower,STSR,DTW,LLPU_P10,0.980151401,41.80690564
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,lower,STSR,DTW,LLPU_P10,1.007592238,42.30641981
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,lower,STSR,DTW,LLPU_P10,1.038194475,44.40342355
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,lower,STSR,MDP,LLPU_P10,0.979260994,2.812704329
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,lower,STSR,MDP,LLPU_P10,0.980151401,3.148048251
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,lower,STSR,MDP,LLPU_P10,1.007592238,2.903638673
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,lower,STSR,MDP,LLPU_P10,1.038194475,2.986390915
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,lower,STSR,HMM-SM,LLPU_P10,0.979 - 0.979,0.804584429
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,lower,STSR,HMM-SM,LLPU_P10,0.979 - 0.98,0.821914388
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,lower,STSR,HMM-SM,LLPU_P10,0.979 - 1.008,0.681923655
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,lower,STSR,HMM-SM,LLPU_P10,0.979 - 1.038,0.73028606
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,pelvis,STSR,DTW,LLPU_P12,0.902303798,16.10886343
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,pelvis,STSR,DTW,LLPU_P12,0.897478207,15.57744972
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,pelvis,STSR,DTW,LLPU_P12,0.929673658,15.90957285
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,pelvis,STSR,DTW,LLPU_P12,0.960912432,15.96255777
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,pelvis,STSR,MDP,LLPU_P12,0.902303798,0.937939266
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,pelvis,STSR,MDP,LLPU_P12,0.897478207,0.843129361
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,pelvis,STSR,MDP,LLPU_P12,0.929673658,0.856922824
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,pelvis,STSR,MDP,LLPU_P12,0.960912432,0.902383666
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,pelvis,STSR,HMM-SM,LLPU_P12,0.902 - 0.902,0.628926601
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,pelvis,STSR,HMM-SM,LLPU_P12,0.902 - 0.897,0.643393166
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,pelvis,STSR,HMM-SM,LLPU_P12,0.902 - 0.93,0.642742221
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,pelvis,STSR,HMM-SM,LLPU_P12,0.902 - 0.961,0.639908288
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,upper,STSR,DTW,LLPU_P12,0.902303798,51.03480507
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,upper,STSR,DTW,LLPU_P12,0.897478207,49.86890317
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,upper,STSR,DTW,LLPU_P12,0.929673658,50.5409929
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,upper,STSR,DTW,LLPU_P12,0.960912432,49.89348687
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,upper,STSR,MDP,LLPU_P12,0.902303798,3.167885008
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,upper,STSR,MDP,LLPU_P12,0.897478207,2.910281137
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,upper,STSR,MDP,LLPU_P12,0.929673658,3.058490502
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,upper,STSR,MDP,LLPU_P12,0.960912432,3.278565844
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,upper,STSR,HMM-SM,LLPU_P12,0.902 - 0.902,0.705268532
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,upper,STSR,HMM-SM,LLPU_P12,0.902 - 0.897,0.574309288
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,upper,STSR,HMM-SM,LLPU_P12,0.902 - 0.93,0.642332687
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,upper,STSR,HMM-SM,LLPU_P12,0.902 - 0.961,0.434091241
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,lower,STSR,DTW,LLPU_P12,0.902303798,35.64594897
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,lower,STSR,DTW,LLPU_P12,0.897478207,34.35929192
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,lower,STSR,DTW,LLPU_P12,0.929673658,34.93445526
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,lower,STSR,DTW,LLPU_P12,0.960912432,35.72297221
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,lower,STSR,MDP,LLPU_P12,0.902303798,2.486426743
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,lower,STSR,MDP,LLPU_P12,0.897478207,2.258310836
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,lower,STSR,MDP,LLPU_P12,0.929673658,2.261687688
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,lower,STSR,MDP,LLPU_P12,0.960912432,2.559107596
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,lower,STSR,HMM-SM,LLPU_P12,0.902 - 0.902,0.681777868
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,lower,STSR,HMM-SM,LLPU_P12,0.902 - 0.897,0.651065646
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,lower,STSR,HMM-SM,LLPU_P12,0.902 - 0.93,0.564520934
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,lower,STSR,HMM-SM,LLPU_P12,0.902 - 0.961,0.631227891
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,pelvis,STSR,DTW,LLPU_P15,0.930509899,16.08756126
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,pelvis,STSR,DTW,LLPU_P15,0.930046888,15.80826475
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,pelvis,STSR,DTW,LLPU_P15,0.961002251,15.10304941
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,pelvis,STSR,DTW,LLPU_P15,0.988066238,15.1396129
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,pelvis,STSR,MDP,LLPU_P15,0.930509899,0.870413584
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,pelvis,STSR,MDP,LLPU_P15,0.930046888,0.849153583
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,pelvis,STSR,MDP,LLPU_P15,0.961002251,0.869918498
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,pelvis,STSR,MDP,LLPU_P15,0.988066238,0.995497301
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,pelvis,STSR,HMM-SM,LLPU_P15,0.931 - 0.931,0.696495498
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,pelvis,STSR,HMM-SM,LLPU_P15,0.931 - 0.93,0.591109075
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,pelvis,STSR,HMM-SM,LLPU_P15,0.931 - 0.961,0.611336171
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,pelvis,STSR,HMM-SM,LLPU_P15,0.931 - 0.988,0.680344697
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,upper,STSR,DTW,LLPU_P15,0.930509899,58.2352872
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,upper,STSR,DTW,LLPU_P15,0.930046888,57.3855416
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,upper,STSR,DTW,LLPU_P15,0.961002251,55.74986457
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,upper,STSR,DTW,LLPU_P15,0.988066238,55.93606324
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,upper,STSR,MDP,LLPU_P15,0.930509899,3.701353989
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,upper,STSR,MDP,LLPU_P15,0.930046888,3.402654797
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,upper,STSR,MDP,LLPU_P15,0.961002251,3.613021109
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,upper,STSR,MDP,LLPU_P15,0.988066238,4.28259152
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,upper,STSR,HMM-SM,LLPU_P15,0.931 - 0.931,0.609984758
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,upper,STSR,HMM-SM,LLPU_P15,0.931 - 0.93,0.661016884
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,upper,STSR,HMM-SM,LLPU_P15,0.931 - 0.961,0.636073882
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,upper,STSR,HMM-SM,LLPU_P15,0.931 - 0.988,0.475129509
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,lower,STSR,DTW,LLPU_P15,0.930509899,51.99094237
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,lower,STSR,DTW,LLPU_P15,0.930046888,51.41441064
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,lower,STSR,DTW,LLPU_P15,0.961002251,51.15793335
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,lower,STSR,DTW,LLPU_P15,0.988066238,52.29812489
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,lower,STSR,MDP,LLPU_P15,0.930509899,3.260712887
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,lower,STSR,MDP,LLPU_P15,0.930046888,3.059694202
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,lower,STSR,MDP,LLPU_P15,0.961002251,3.242535924
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,lower,STSR,MDP,LLPU_P15,0.988066238,3.936240464
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,lower,STSR,HMM-SM,LLPU_P15,0.931 - 0.931,0.814248641
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,lower,STSR,HMM-SM,LLPU_P15,0.931 - 0.93,0.611069977
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,lower,STSR,HMM-SM,LLPU_P15,0.931 - 0.961,0.694258325
+c:\GP-WearablesAnalysis\examples\logresults_16-07-24_19-52.csv,lower,STSR,HMM-SM,LLPU_P15,0.931 - 0.988,0.72900043
