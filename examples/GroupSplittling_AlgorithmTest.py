@@ -254,7 +254,6 @@ def random_sampling(groups, grouped_gait_cycles, sample_size=50):
     baseline_1_indices = sample_indices_first_group[:50]
     baseline_2_indices = sample_indices_first_group[50:]
     
-    
     subsampled_values_baseline1 = [groups[0][j] for j in baseline_1_indices]
     subsampled_gait_cycles_baseline1 = [grouped_gait_cycles[0][j] for j in baseline_1_indices]
     
@@ -284,7 +283,7 @@ def random_sampling(groups, grouped_gait_cycles, sample_size=50):
 
 def check_group_configurations(gait_split_parameter, raw_sensor_data):
     percent_grading = 0.03
-    groups, grouped_gait_cycles, grading = finding_groupings(4, gait_split_parameter, raw_sensor_data, percent_grading, reverse=False)
+    groups, grouped_gait_cycles, grading = finding_groupings(3, gait_split_parameter, raw_sensor_data, percent_grading, reverse=False)
     
     filtered_groups = []
     filtered_gait_groups = []
@@ -295,7 +294,7 @@ def check_group_configurations(gait_split_parameter, raw_sensor_data):
             filtered_gait_groups.append(grouped_gait_cycles[i])
     
     if len(filtered_groups) < 3:
-        groups, grouped_gait_cycles, grading = finding_groupings(4, gait_split_parameter, raw_sensor_data, percent_grading, reverse=True)  # Try the other direction if requirements are not fulfilled
+        groups, grouped_gait_cycles, grading = finding_groupings(3, gait_split_parameter, raw_sensor_data, percent_grading, reverse=True)  # Try the other direction if requirements are not fulfilled
         filtered_groups = []
         filtered_gait_groups = []
         
@@ -319,6 +318,9 @@ blobs = storage_client.list_blobs(bucket_name, prefix = base_directory)
 prefix_from_bucket = 'Wearable Biofeedback System (REB-0448)/Data/Raw Data/' 
 #participant_list = ['LLPU_P01','LLPU_P02','LLPU_P03','LLPU_P04','LLPU_P05','LLPU_P06','LLPU_P08','LLPU_P09','LLPU_P10','LLPU_P12','LLPU_P14','LLPU_P15']
 #participant_list = ['LLPU_P01','LLPU_P02','LLPU_P03','LLPU_P04','LLPU_P05','LLPU_P06','LLPU_P08','LLPU_P09','LLPU_P12', 'LLPU_P15']
+
+#participant_list = ['LLPU_P01','LLPU_P02','LLPU_P03','LLPU_P04','LLPU_P05','LLPU_P06','LLPU_P08','LLPU_P09','LLPU_P14', 'LLPU_P15']
+# participant_list = ['LLPU_P05','LLPU_P06','LLPU_P08','LLPU_P09','LLPU_P14', 'LLPU_P15']
 
 participant_list = ['LLPU_P01','LLPU_P02','LLPU_P03','LLPU_P04','LLPU_P05','LLPU_P06','LLPU_P09','LLPU_P10','LLPU_P12','LLPU_P15']
 #participant_list = ['LLPU_P15']
@@ -417,7 +419,7 @@ for participant in participant_list:
                         step_length = step_lengths[prosth_side]
                         step_lengths_list.append(step_length)
                         
-                    
+                
                     #Targeting specifically the baseline trials to figure out which of the groupings will correspond to baseline 
                     if file_name.startswith('Baseline'):
                         
@@ -463,6 +465,8 @@ for participant in participant_list:
         step_lengths = [item for sublist in step_lengths_list for item in sublist]
         step_lengths_baseline = [item for sublist in step_lengths_baseline_list for item in sublist]
         step_lengths_baseline_mean = np.mean(step_lengths_baseline)
+        
+        
         #print(len(stance_time_symmetry))
         
         flattened_raw_sensor = []
@@ -472,27 +476,25 @@ for participant in participant_list:
         
         #print(len(flattened_raw_sensor))
         
-        groups, gaitcycles = check_group_configurations(stance_time_symmetry, flattened_raw_sensor)
-        group_means = [np.mean(group) for group in groups]
+        ordered_groups, ordered_gaitcycles = check_group_configurations(stance_time_symmetry, flattened_raw_sensor)
+        ordered_group_means = [np.mean(group) for group in ordered_groups]
         
-        #Determining which group will be baseline based on which end is closer to the mean of the baseline stance time symmetry scores 
-        first_group_diff = abs(group_means[0] - step_lengths_baseline_mean)
-        last_group_diff = abs(group_means[-1] - step_lengths_baseline_mean)
+        # #Determining which group will be baseline based on which end is closer to the mean of the baseline stance time symmetry scores 
+        # first_group_diff = abs(group_means[0] - stance_time_symmetry_baseline_mean)
+        # last_group_diff = abs(group_means[-1] - stance_time_symmetry_baseline_mean)
 
-        # Determine the order of the groups
-        if first_group_diff <= last_group_diff:
-            ordered_groups = groups  # Retain the order
-            ordered_gaitcycles = gaitcycles
-            ordered_group_means = group_means
-        else:
-            ordered_groups = groups[::-1]  # Reverse the order    
-            ordered_gaitcycles = gaitcycles[::-1]
-            ordered_group_means = group_means[::-1]
+        # # Determine the order of the groups
+        # if first_group_diff <= last_group_diff:
+        #     ordered_groups = groups  # Retain the order
+        #     ordered_gaitcycles = gaitcycles
+        #     ordered_group_means = group_means
+        # else:
+        #     ordered_groups = groups[::-1]  # Reverse the order    
+        #     ordered_gaitcycles = gaitcycles[::-1]
+        #     ordered_group_means = group_means[::-1]
 
         for k, group in enumerate(ordered_groups):
             print(f"Group {k+1}: {len(group)} (Mean: {np.mean(group) if group else 'N/A'})")
-            percentdiff = (np.mean(group)-np.mean(ordered_groups[0]))/np.mean(ordered_groups[0])*100
-                #print(f"Percent diff between groups = {round(percentdiff,3)}")
         
         """Splitting of the raw sensor data was done with all of the sensors concatenated along the last axis (i.e. each gait cycle with 40 points would be a 40x30 array (6 axis pelvis + 12 axis upper + 12 axis lower))"""
         """This is used to split them out into their respective sensor configurations (pelvis, upper, lower)"""
@@ -542,11 +544,7 @@ for participant in participant_list:
             
             # """ SOM Implementation"""
             # Shuffle and split the list
-            #Try 60/40 split (Train on 60, test on 20, test on 20)
-            
-            train_arrays, test_arrays = train_test_split(raw_sensor[0], test_size=0.4, random_state=42) #60% of dataset goes toward training, 40% goes toward testing.
-            
-            # Concatenate arrays for training and testing
+            train_arrays, test_arrays = train_test_split(raw_sensor[0], test_size=0.2, random_state=42)
             train_data = np.concatenate(train_arrays, axis=0)
             test_data = np.concatenate(test_arrays, axis=0)
         
@@ -554,8 +552,8 @@ for participant in participant_list:
             #print("Testing Data Shape:", test_data.shape)
             print("Training the SOM on baseline data")
             MDP_mean_deviations = []
-            trained_SOM = train_minisom(train_data, learning_rate=0.1, topology='hexagonal', normalize=False) # type: ignore
-            test_baseline = calculate_MDP(test_data, train_data, trained_SOM, normalize=False) # type: ignore
+            trained_SOM = train_minisom(train_data, learning_rate=0.1, topology='hexagonal', normalize=True) # type: ignore
+            test_baseline = calculate_MDP(test_data, train_data, trained_SOM, normalize=True) # type: ignore
             MDP_mean_deviations.append(np.mean(test_baseline))
             add_row_to_csv(csv_path, arrangements[sensor_idx],'STSR','MDP',participant, ordered_group_means[0], np.mean(test_baseline))
             
@@ -564,7 +562,7 @@ for participant in participant_list:
                 #Shuffle and split the list (only looking at the test data here)
                 train_arrays, test_arrays = train_test_split(raw_sensor[j], test_size=0.2, random_state=42)
                 test_data_upperlevels = np.concatenate(test_arrays, axis=0)
-                test_upperlevels = calculate_MDP(test_data_upperlevels, train_data, trained_SOM, normalize=False) # type: ignore
+                test_upperlevels = calculate_MDP(test_data_upperlevels, train_data, trained_SOM, normalize=True) # type: ignore
                 MDP_mean_deviations.append(np.mean(test_upperlevels))
                 add_row_to_csv(csv_path, arrangements[sensor_idx],'STSR','MDP',participant, ordered_group_means[j], np.mean(test_upperlevels))
             
@@ -601,10 +599,6 @@ for participant in participant_list:
                 
                 num_models_training = num_models_train #Re initialize the number of models for training 
                 hmm_models[idx] = []
-                
-                if num_models_train == 1 and idx == 0:
-                    #If only doing a single attempt, then two models should be trained for the first group (one as reference, and one to test with)
-                    num_models_training = 2
                 
                 for j in range(num_models_training):
                     train_forward_model = True
