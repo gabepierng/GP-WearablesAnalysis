@@ -47,7 +47,6 @@ def calc_gait_profile_score(part_kinematics, control_kinematics):
     gait_profile_score = np.linalg.norm(gait_variability_score) / np.sqrt(len(gait_variability_score))
     
     return gait_profile_score
-
 """ 
 TSLEARN DTW - documentation: https://tslearn.readthedocs.io/en/stable/gen_modules/metrics/tslearn.metrics.dtw_path.html#tslearn.metrics.dtw_path
     Parameters: 

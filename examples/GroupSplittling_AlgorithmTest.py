@@ -283,7 +283,7 @@ def random_sampling(groups, grouped_gait_cycles, sample_size=50):
 
 def check_group_configurations(gait_split_parameter, raw_sensor_data):
     percent_grading = 0.03
-    groups, grouped_gait_cycles, grading = finding_groupings(3, gait_split_parameter, raw_sensor_data, percent_grading, reverse=False)
+    groups, grouped_gait_cycles, grading = finding_groupings(4, gait_split_parameter, raw_sensor_data, percent_grading, reverse=False)
     
     filtered_groups = []
     filtered_gait_groups = []
@@ -294,7 +294,7 @@ def check_group_configurations(gait_split_parameter, raw_sensor_data):
             filtered_gait_groups.append(grouped_gait_cycles[i])
     
     if len(filtered_groups) < 3:
-        groups, grouped_gait_cycles, grading = finding_groupings(3, gait_split_parameter, raw_sensor_data, percent_grading, reverse=True)  # Try the other direction if requirements are not fulfilled
+        groups, grouped_gait_cycles, grading = finding_groupings(4, gait_split_parameter, raw_sensor_data, percent_grading, reverse=True)  # Try the other direction if requirements are not fulfilled
         filtered_groups = []
         filtered_gait_groups = []
         
