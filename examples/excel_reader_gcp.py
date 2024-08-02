@@ -205,7 +205,7 @@ class XsensGaitDataParser:
                             foot position vector, and frame rate MVN samples at for trial
     Output: Spatiotemporal parameters
     '''
-    def calc_spatio_temp_params(self, gait_events, pelvis_position, foot_position, frame_rate, knee_angles, hip_angles,ankle_angles):
+    def calc_spatio_temp_params(self, gait_events, pelvis_position, foot_position, frame_rate, knee_angles, hip_angles):
         # inputs are Nx3 vectors with 3D position coordinates
         def calc_distances(positions1, positions2):
             # can generally ignore z-axis, remove before doing calculations
@@ -246,13 +246,14 @@ class XsensGaitDataParser:
 
             # double stance double_stance_support as percent of gait cycle
             r_dbl_stnc_sprt = np.mean(r_to_l_steps[2,:] - r_to_l_steps[1,:]) / (stride_time[0] * frame_rate)
-            l_dbl_stnc_sprt = np.mean(l_to_r_steps[2,:] - l_to_r_steps[1,:]) / (stride_time[1] * frame_rate)
-            double_stance_support = [r_dbl_stnc_sprt, l_dbl_stnc_sprt]
+            # l_dbl_stnc_sprt = np.mean(l_to_r_steps[2,:] - l_to_r_steps[1,:]) / (stride_time[1] * frame_rate)
+            #double_stance_support =  [r_dbl_stnc_sprt, l_dbl_stnc_sprt]
+            double_stance_support =  r_dbl_stnc_sprt
             
             r_to_l_step_lengths = calc_distances(foot_position[0, r_to_l_steps[0,:]],
                                                         foot_position[1, r_to_l_steps[1,:]])
-            l_to_r_step_lengths = calc_distances(foot_position[1, l_to_r_steps[0,:]],
-                                                        foot_position[0, l_to_r_steps[1,:]])
+            # l_to_r_step_lengths = calc_distances(foot_position[1, l_to_r_steps[0,:]],
+            #                                             foot_position[0, l_to_r_steps[1,:]])
 
             step_lengths = np.array([calc_distances(foot_position[0, r_to_l_strides[2,:]],
                                             foot_position[1, r_to_l_strides[3,:]]),
@@ -269,11 +270,11 @@ class XsensGaitDataParser:
             
             stride_length_SR = stride_lengths[0] / stride_lengths[1]
 
-            step_length_avg = [np.mean(l_to_r_step_lengths),
-                                np.mean(r_to_l_step_lengths)]
+            # step_length_avg = [np.mean(l_to_r_step_lengths),
+            #                     np.mean(r_to_l_step_lengths)]
 
-            step_length_std = [np.std(l_to_r_step_lengths, ddof=1),
-                                np.std(r_to_l_step_lengths, ddof=1)]
+            # step_length_std = [np.std(l_to_r_step_lengths, ddof=1),
+            #                     np.std(r_to_l_step_lengths, ddof=1)]
             
             stance_times = [[stride[1] - stride[0] for stride in r_to_l_strides.T], 
                             [stride[4] - stride[3] for stride in r_to_l_strides.T]]
@@ -288,11 +289,11 @@ class XsensGaitDataParser:
             hip_ROMs = np.array([np.array([np.max(hip_angles[0][stride[0]:stride[2]], axis=0) - np.min(hip_angles[0][stride[0]:stride[2]], axis=0),
                             np.max(hip_angles[1][stride[3]:stride[5]], axis=0) - np.min(hip_angles[1][stride[3]:stride[5]], axis=0)]) for stride in r_to_l_strides.T])
             
-            ankle_ROMs = np.array([np.array([np.max(ankle_angles[0][stride[0]:stride[2]], axis=0) - np.min(ankle_angles[0][stride[0]:stride[2]], axis=0),
-                            np.max(ankle_angles[1][stride[3]:stride[5]], axis=0) - np.min(ankle_angles[1][stride[3]:stride[5]], axis=0)]) for stride in r_to_l_strides.T])
+            # ankle_ROMs = np.array([np.array([np.max(ankle_angles[0][stride[0]:stride[2]], axis=0) - np.min(ankle_angles[0][stride[0]:stride[2]], axis=0),
+            #                 np.max(ankle_angles[1][stride[3]:stride[5]], axis=0) - np.min(ankle_angles[1][stride[3]:stride[5]], axis=0)]) for stride in r_to_l_strides.T])
 
-
-            return [double_stance_support, step_length_avg, step_length_std, step_lengths, stride_length_SR, stance_time_ratio, knee_ROMs, knee_ROM_SR, hip_ROMs, stride_lengths, ankle_ROMs]
+            return [double_stance_support, step_lengths, stride_length_SR, stance_time_ratio, knee_ROMs, knee_ROM_SR, hip_ROMs, stride_lengths]
+            #return [double_stance_support, step_length_avg, step_length_std, step_lengths, stride_length_SR, stance_time_ratio, knee_ROMs, knee_ROM_SR, hip_ROMs, stride_lengths, ankle_ROMs]
             # return [double_stance_support, step_length_avg, step_length_std, step_lengths, stride_length_SR, stance_times, knee_ROMs, knee_ROM_SR, hip_ROMs]
 
         r_gait_events = gait_events[0]
@@ -371,22 +372,40 @@ class XsensGaitDataParser:
         ind_cadence = (2 / ind_walk_time) * 60
 
         step_based_params = calc_step_params(stride_time_avg)
+        # double_stance_support = step_based_params[0]
+        # step_length_avg = step_based_params[1]
+        # step_length_std = step_based_params[2]
+        # step_lengths = step_based_params[3]
+        # stride_length_SR = step_based_params[4]
+        # stance_time_ratio_ind = step_based_params[5]
+        # knee_ROMs = step_based_params[6]
+        # knee_ROM_SR = step_based_params[7]
+        # hip_ROMs = step_based_params[8]
+        # stride_lengths = step_based_params[9]
+        # ankle_ROMs = step_based_params[10]
+        
         double_stance_support = step_based_params[0]
-        step_length_avg = step_based_params[1]
-        step_length_std = step_based_params[2]
-        step_lengths = step_based_params[3]
-        stride_length_SR = step_based_params[4]
-        stance_time_ratio_ind = step_based_params[5]
-        knee_ROMs = step_based_params[6]
-        knee_ROM_SR = step_based_params[7]
-        hip_ROMs = step_based_params[8]
-        stride_lengths = step_based_params[9]
-        ankle_ROMs = step_based_params[10]
-
+        # step_length_avg = step_based_params[1]
+        # step_length_std = step_based_params[2]
+        step_lengths = step_based_params[1]
+        stride_length_SR = step_based_params[2]
+        stance_time_ratio_ind = step_based_params[3]
+        knee_ROMs = step_based_params[4]
+        knee_ROM_SR = step_based_params[5]
+        hip_ROMs = step_based_params[6]
+        stride_lengths = step_based_params[7]
+        
+        
+        # spatio_temp_params = [stance_time_ratio, swing_time_ratio, double_stance_support,
+        #                     step_length_avg, stride_length_avg, stride_time_avg, cadence, 
+        #                     speed, stance_time_avg, stance_time_std, step_lengths, stride_length_SR, stance_time_ratio_ind, knee_ROMs, hip_ROMs, stride_lengths,
+        #                     ind_speed, ind_cadence]
+        
         spatio_temp_params = [stance_time_ratio, swing_time_ratio, double_stance_support,
-                            step_length_avg, stride_length_avg, stride_time_avg, cadence, 
-                            speed, stance_time_avg, stance_time_std, step_lengths, stride_length_SR, stance_time_ratio_ind, knee_ROMs, hip_ROMs, ankle_ROMs, stride_lengths,
+                            stride_length_avg, stride_time_avg, cadence, 
+                            speed, stance_time_avg, stance_time_std, step_lengths, stride_length_SR, stance_time_ratio_ind, knee_ROMs, hip_ROMs, stride_lengths,
                             ind_speed, ind_cadence]
+        
 
         return spatio_temp_params
 
@@ -767,7 +786,7 @@ class XsensGaitDataParser:
             partitioned_mvn_data['gyro_data'][5] = [stride for stride in self.partitioned_mvn_data['gyro_data'][5] if np.max(stride[:,1]) - np.min(stride[:,1]) < 4.5]
         
         # print('Calculating spatiotemporal parameters...')
-        self.gait_params['spatio_temp'] = self.calc_spatio_temp_params(self.gait_events, pelvis_position, foot_position, frame_rate, knee_angles, hip_angles, ankle_angles)
+        self.gait_params['spatio_temp'] = self.calc_spatio_temp_params(self.gait_events, pelvis_position, foot_position, frame_rate, knee_angles, hip_angles)
 
         # print('Calculating kinematic parameters...')
         self.gait_params['kinematics'] = self.calc_kinematic_params(self.gait_events, pelvis_euler_orientation, hip_angles, knee_angles, ankle_angles, sternum_euler_orientation)

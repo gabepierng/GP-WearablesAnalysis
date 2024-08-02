@@ -67,14 +67,15 @@ def tslearn_dtw_analysis(set1, set2=None):
             for j in range(i + 1, len(set1)):
                 distance = tslearndtw_distance(set1[i], set1[j])
                 dtw_dist.append(distance)
-        return np.median(dtw_dist)
+        return np.mean(dtw_dist)
     
     else:
         for gaitcycle1 in set1:
             for gaitcycle2 in set2:
                 distance = tslearndtw_distance(gaitcycle1, gaitcycle2)
                 dtw_dist.append(distance)
-        return np.median(dtw_dist)
+        return np.mean(dtw_dist)
+
 
 """
 Training a Self Organizing Map (SOM)
@@ -130,10 +131,10 @@ def train_minisom(control_data, learning_rate=0.1, topology='hexagonal', normali
     som2.train(control_data,steps2, use_epochs=True)
     
     #Option for visualizing the map
-    u_matrix = som2.distance_map().T
-    plt.figure(figsize=(10,10))
-    plt.pcolor(u_matrix, cmap= 'viridis')
-    plt.colorbar()
+    # u_matrix = som2.distance_map().T
+    # plt.figure(figsize=(10,10))
+    # plt.pcolor(u_matrix, cmap= 'viridis')
+    # plt.colorbar()
     #plt.show()
     
     return som2
@@ -166,7 +167,7 @@ def calculate_MDP(data, controldata, som, normalize=True):
         weight_array = restruct*std_devs + means
         weight_restruct = weight_array.reshape(som._weights.shape[0], som._weights.shape[1], som._weights.shape[2])
         som._weights = weight_restruct
-        print("Denormalized!")
+        #print("Denormalized!")
     
     winners = np.array([som.winner(instance) for instance in data])  # Finds the best matching unit (BMU) for all time points in the data
     BMU = som._weights[winners[:, 0], winners[:, 1]]  # Collects the corresponding weight vectors for all BMUs

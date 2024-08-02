@@ -205,7 +205,7 @@ class XsensGaitDataParser:
                             foot position vector, and frame rate MVN samples at for trial
     Output: Spatiotemporal parameters
     '''
-    def calc_spatio_temp_params(self, gait_events, pelvis_position, foot_position, frame_rate, knee_angles, hip_angles):
+    def calc_spatio_temp_params(self, gait_events, pelvis_position, foot_position, frame_rate, knee_angles, hip_angles, lower_leg_orientation, foot_velocity):
         # inputs are Nx3 vectors with 3D position coordinates
         def calc_distances(positions1, positions2):
             # can generally ignore z-axis, remove before doing calculations
@@ -387,10 +387,66 @@ class XsensGaitDataParser:
         #                     speed, stance_time_avg, stance_time_std, step_lengths, stride_length_SR, stance_time_ratio_ind, knee_ROMs, hip_ROMs, stride_lengths,
         #                     ind_speed, ind_cadence]
         
-        spatio_temp_params = [stance_time_ratio, swing_time_ratio, double_stance_support,
-                            stride_length_avg, stride_time_avg, cadence, 
-                            speed, stance_time_avg, stance_time_std, step_lengths, stride_length_SR, stance_time_ratio_ind, knee_ROMs, hip_ROMs, stride_lengths,
-                            ind_speed, ind_cadence]
+        # IMU Gait Normalcy Index gait parameters (https://ieeexplore.ieee.org/document/9049129)
+        swing_phase_percent = np.array([swing_times[0]/stride_times[0], swing_times[1]/stride_times[1]])
+        max_forward_velocity = []
+        max_vert_ank_disp = []
+        step_length_at_max_vert = []
+        max_ank_lat_displace = []
+        max_ank_med_displace = []
+        shank_sagit_rom = []
+
+        for i in range(len(gait_events)):
+            max_forward_velocity.append([])
+            max_vert_ank_disp.append([])
+            step_length_at_max_vert.append([])
+            max_ank_lat_displace.append([])
+            max_ank_med_displace.append([])
+            shank_sagit_rom.append([])
+            
+            for j in range(gait_events[i].shape[1]):
+                start_gait_cycle = gait_events[i][0,j]
+                swing_phase_start = gait_events[i][1,j]
+                end_gait_cycle = gait_events[i][2,j]
+                max_forward_velocity[i].append( np.max(foot_velocity[i, start_gait_cycle:end_gait_cycle ,0]) )
+                max_vert_ank_disp[i].append( np.max(foot_position[i, start_gait_cycle:end_gait_cycle ,2]) )
+                time_of_max_vert_ank = np.argmax(foot_position[i, start_gait_cycle:end_gait_cycle ,2])
+                step_length_at_max_vert[i].append(foot_position[i, time_of_max_vert_ank + start_gait_cycle, 0] - foot_position[i, start_gait_cycle, 0])
+                # accounts for whether positive of negative y-direction desired, since direction of medical and lateral in reference to global frame
+                # changes whether using right or left leg.
+                if(i == 0):
+                    time_max_ank_lat = np.argmin(foot_position[i, start_gait_cycle:end_gait_cycle, 1])
+                    time_max_ank_med = np.argmax(foot_position[i, start_gait_cycle:end_gait_cycle, 1])
+                    max_ank_lat_displace[i].append( foot_position[i, time_max_ank_lat + start_gait_cycle, 1] 
+                                                - pelvis_position[time_max_ank_lat + start_gait_cycle, 1] )
+                    max_ank_med_displace[i].append( foot_position[i, time_max_ank_med + start_gait_cycle, 1] 
+                                                - pelvis_position[time_max_ank_med + start_gait_cycle, 1] )
+                else:
+                    time_max_ank_lat = np.argmax(foot_position[i, start_gait_cycle:end_gait_cycle ,1])
+                    time_max_ank_med = np.argmin(foot_position[i, start_gait_cycle:end_gait_cycle ,1])
+                    max_ank_lat_displace[i].append( foot_position[i, time_max_ank_lat + start_gait_cycle, 1] 
+                                                - pelvis_position[time_max_ank_lat + start_gait_cycle, 1] )
+                    max_ank_med_displace[i].append( foot_position[i, time_max_ank_med + start_gait_cycle, 1] 
+                                                - pelvis_position[time_max_ank_med + start_gait_cycle, 1] )
+                
+                max_shank_orient = np.max(lower_leg_orientation[i, swing_phase_start:end_gait_cycle, 1] )
+                min_shank_orient = np.min(lower_leg_orientation[i, swing_phase_start:end_gait_cycle, 1] )
+                shank_sagit_rom[i].append(max_shank_orient - min_shank_orient)
+
+        max_forward_velocity = np.array(max_forward_velocity)
+        max_vert_ank_disp = np.array(max_vert_ank_disp)
+        step_length_at_max_vert = np.array(step_length_at_max_vert)
+        max_ank_lat_displace = np.array(max_ank_lat_displace)
+        max_ank_med_displace = np.array(max_ank_med_displace)
+        shank_sagit_rom = np.array(shank_sagit_rom)
+        
+        # spatio_temp_params = [stance_time_ratio, swing_time_ratio, double_stance_support,
+        #                     stride_length_avg, stride_time_avg, cadence, 
+        #                     speed, stance_time_avg, stance_time_std, step_lengths, stride_length_SR, stance_time_ratio_ind, knee_ROMs, hip_ROMs, stride_lengths,
+        #                     ind_speed, ind_cadence]
+        
+        spatio_temp_params = [stride_times, stride_lengths, swing_phase_percent, max_forward_velocity, max_vert_ank_disp, step_length_at_max_vert,
+                            max_ank_lat_displace, max_ank_med_displace, shank_sagit_rom]
 
         return spatio_temp_params
 
@@ -536,6 +592,14 @@ class XsensGaitDataParser:
         else:
             raise ValueError('Partitioned dot data dictionary empty, call time_align_mvn_and_dot() first')
 
+    def get_lower_leg_orientation(self):
+        return np.array([ np.transpose([self.mvnxData['Right Lower Leg Orient ' + plane] for plane in axis_planes]),
+                np.transpose([self.mvnxData['Left Lower Leg Orient ' + plane] for plane in axis_planes]) ])
+
+    def get_foot_velocity(self):
+            return np.array([ np.transpose([self.mvnxData['Right Foot Velocity ' + plane] for plane in axis_planes]),
+                    np.transpose([self.mvnxData['Left Foot Velocity ' + plane] for plane in axis_planes]) ])
+        
     '''
     If there is corresponding Xsens DOT data, this function splits the Xsens DOT data into gait cycles, using gait events identified
     by the MVN system data
@@ -585,7 +649,6 @@ class XsensGaitDataParser:
                     new_align = initial_time_align - i     
                 
             return new_align
-                    
                     
         
         # for each DOT sensor, time align it with the MVN data and partition the gait cycles based on the MVN gait events
@@ -646,6 +709,8 @@ class XsensGaitDataParser:
         hip_angles = self.get_hip_angles()
         knee_angles = self.get_knee_angles()
         ankle_angles = self.get_ankle_angles()
+        lower_leg_orientation = self.get_lower_leg_orientation()
+        foot_velocity = self.get_foot_velocity()
 
         # plt.figure()    
         # plt.plot(pelvis_euler_orientation[0,:,2], color = 'black')
@@ -766,10 +831,10 @@ class XsensGaitDataParser:
         
         # specific participant occasionally knocked left thigh-sensor mid-trial. This filters out those strides
         if('/MI' in mvn_csv_filename):
-            partitioned_mvn_data['gyro_data'][5] = [stride for stride in self.partitioned_mvn_data['gyro_data'][5] if np.max(stride[:,1]) - np.min(stride[:,1]) < 4.5]
+            self.partitioned_mvn_data['gyro_data'][5] = [stride for stride in self.partitioned_mvn_data['gyro_data'][5] if np.max(stride[:,1]) - np.min(stride[:,1]) < 4.5]
         
         # print('Calculating spatiotemporal parameters...')
-        self.gait_params['spatio_temp'] = self.calc_spatio_temp_params(self.gait_events, pelvis_position, foot_position, frame_rate, knee_angles, hip_angles)
+        self.gait_params['spatio_temp'] = self.calc_spatio_temp_params(self.gait_events, pelvis_position, foot_position, frame_rate, knee_angles, hip_angles, lower_leg_orientation, foot_velocity)
 
         # print('Calculating kinematic parameters...')
         self.gait_params['kinematics'] = self.calc_kinematic_params(self.gait_events, pelvis_euler_orientation, hip_angles, knee_angles, ankle_angles, sternum_euler_orientation)
