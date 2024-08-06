@@ -376,9 +376,9 @@ def random_sampling(groups, grouped_gait_cycles, sample_size=50):
 
 """ Group splitting and sampling are called. Checks to see which direction the grouping should be done in, and only appends the groups that have at least 70 points"""
 
-def check_group_configurations(gait_split_parameter, raw_sensor_data):
+def check_group_configurations(gait_split_parameter, raw_sensor_data, num_groups):
     percent_grading = 0.4
-    groups, grouped_gait_cycles, grading = finding_groupings(3, gait_split_parameter, raw_sensor_data, percent_grading, reverse=False)
+    groups, grouped_gait_cycles, grading = finding_groupings(num_groups, gait_split_parameter, raw_sensor_data, percent_grading, reverse=False)
     
     filtered_groups = []
     filtered_gait_groups = []
@@ -389,7 +389,7 @@ def check_group_configurations(gait_split_parameter, raw_sensor_data):
             filtered_gait_groups.append(grouped_gait_cycles[i])
     
     if len(filtered_groups) < 3:
-        groups, grouped_gait_cycles, grading = finding_groupings(3, gait_split_parameter, raw_sensor_data, percent_grading, reverse=True)  # Try the other direction if requirements are not fulfilled
+        groups, grouped_gait_cycles, grading = finding_groupings(num_groups, gait_split_parameter, raw_sensor_data, percent_grading, reverse=True)  # Try the other direction if requirements are not fulfilled
         filtered_groups = []
         filtered_gait_groups = []
         
@@ -555,10 +555,10 @@ for participant in participant_list:
     if trial_type in part_gait_params:
         
         stance_time_symmetry = [item for sublist in [i[11] for i in part_gait_params[trial_type]] for item in sublist]
-        # knee_ROM = [item for sublist in knee_roms_list for item in sublist]
-        # step_lengths = [item for sublist in step_lengths_list for item in sublist]
-        # hip_ROM = [item for sublist in hip_roms_list for item in sublist] 
-        # ankle_ROM = [item for sublist in ankle_roms_list for item in sublist] 
+        knee_ROM = [item for sublist in knee_roms_list for item in sublist]
+        step_lengths = [item for sublist in step_lengths_list for item in sublist]
+        hip_ROM = [item for sublist in hip_roms_list for item in sublist] 
+        ankle_ROM = [item for sublist in ankle_roms_list for item in sublist] 
     
     
         partitioned_awinda_gait = {}
@@ -596,13 +596,19 @@ for participant in participant_list:
         for sublist in part_raw_sensor:
             for item in sublist:
                 flattened_raw_sensor.append(item) #Flatten to individual gait cycles 
-        
-        ordered_groups, ordered_gaitcycles = check_group_configurations(gait_scores_list, flattened_raw_sensor)
+                
+        ordered_groups, ordered_gaitcycles = check_group_configurations(gait_scores_list, flattened_raw_sensor,3)
+        # if participant == 'LLPU_P08':
+        #     ordered_groups, ordered_gaitcycles = check_group_configurations(stance_time_symmetry, flattened_raw_sensor,6)
+        # else:
+        #     ordered_groups, ordered_gaitcycles = check_group_configurations(stance_time_symmetry, flattened_raw_sensor,4)
         ordered_group_means = [round(np.mean(group), 3) for group in ordered_groups]
         ordered_group_min = [round(min(group), 3) for group in ordered_groups]
         ordered_group_max = [round(max(group), 3) for group in ordered_groups]
         group_lengths = [len(group) for group in ordered_groups]
-
+        
+                # print('Mean Speed: %.3f ± %.3f' % (np.mean(speed), np.std(speed)))
+                # print('Mean Cadence: %.3f ± %.3f' % (np.mean(cadence), np.std(cadence)))
         # Group labels
         group_labels = ["Baseline 1", "Baseline 2", "Group 1", "Group 2"]
 
@@ -619,7 +625,7 @@ for participant in participant_list:
         df['Participant'] = participant
 
         # Save or append the DataFrame to a CSV file
-        csv_filename = "C:\\Users\\ekuep\Desktop\\results_groupinfo.csv"
+        csv_filename = "C:\\Users\\ekuep\Desktop\\results_groupinfo_GPS.csv"
 
         if os.path.isfile(csv_filename):
             # If the file exists, append without writing the header

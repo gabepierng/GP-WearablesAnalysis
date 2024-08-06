@@ -113,7 +113,7 @@ def train_minisom(control_data, learning_rate=0.1, topology='hexagonal', normali
     print("Map size:",msize)
     print("Number of map units",x*y)
     
-    steps = 20 # Number of iterations - previous heuristic: 500 * number of network units [2] 
+    steps = 200 # Number of iterations - previous heuristic: 500 * number of network units [2] 
     #steps = int(10*(x*y)/control_data.shape[0]) #Based on .trainlen = 10*m/n (m is # map units, n is the number of training samples)
     sigma = max(msize) / 4 # Sigma used: Heuristic: max(msize)/4 [1] 
     
@@ -131,10 +131,10 @@ def train_minisom(control_data, learning_rate=0.1, topology='hexagonal', normali
     som2.train(control_data,steps2, use_epochs=True)
     
     #Option for visualizing the map
-    # u_matrix = som2.distance_map().T
-    # plt.figure(figsize=(10,10))
-    # plt.pcolor(u_matrix, cmap= 'viridis')
-    # plt.colorbar()
+    u_matrix = som2.distance_map().T
+    plt.figure(figsize=(10,10))
+    plt.pcolor(u_matrix, cmap= 'viridis')
+    plt.colorbar()
     #plt.show()
     
     return som2
@@ -167,7 +167,7 @@ def calculate_MDP(data, controldata, som, normalize=True):
         weight_array = restruct*std_devs + means
         weight_restruct = weight_array.reshape(som._weights.shape[0], som._weights.shape[1], som._weights.shape[2])
         som._weights = weight_restruct
-        #print("Denormalized!")
+        print("Denormalized!")
     
     winners = np.array([som.winner(instance) for instance in data])  # Finds the best matching unit (BMU) for all time points in the data
     BMU = som._weights[winners[:, 0], winners[:, 1]]  # Collects the corresponding weight vectors for all BMUs
