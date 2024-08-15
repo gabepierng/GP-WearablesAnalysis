@@ -272,7 +272,7 @@ def finding_groupings(num_groups, gait_parameter, gait_cycles, percent_grading, 
 """
 
 def random_sampling(groups, grouped_gait_cycles, sample_size=50):
-    def adaptive_subsample(group, first_mean, i, percent_grading=0.4, tolerance=0.05, sample_size=50, max_iterations=10000):
+    def adaptive_subsample(group, first_mean, i, percent_grading=0.03, tolerance=0.005, sample_size=50, max_iterations=10000):
         available_indices = list(range(len(group)))  # Make a list that spans all the indices
         sample_indices = np.random.choice(available_indices, size=sample_size, replace=False)
         
@@ -377,7 +377,7 @@ def random_sampling(groups, grouped_gait_cycles, sample_size=50):
 """ Group splitting and sampling are called. Checks to see which direction the grouping should be done in, and only appends the groups that have at least 70 points"""
 
 def check_group_configurations(gait_split_parameter, raw_sensor_data, num_groups):
-    percent_grading = 0.4
+    percent_grading = 0.03
     groups, grouped_gait_cycles, grading = finding_groupings(num_groups, gait_split_parameter, raw_sensor_data, percent_grading, reverse=False)
     
     filtered_groups = []
@@ -597,11 +597,11 @@ for participant in participant_list:
             for item in sublist:
                 flattened_raw_sensor.append(item) #Flatten to individual gait cycles 
                 
-        ordered_groups, ordered_gaitcycles = check_group_configurations(gait_scores_list, flattened_raw_sensor,3)
-        # if participant == 'LLPU_P08':
-        #     ordered_groups, ordered_gaitcycles = check_group_configurations(stance_time_symmetry, flattened_raw_sensor,6)
-        # else:
-        #     ordered_groups, ordered_gaitcycles = check_group_configurations(stance_time_symmetry, flattened_raw_sensor,4)
+        #ordered_groups, ordered_gaitcycles = check_group_configurations(gait_scores_list, flattened_raw_sensor,3)
+        if participant == 'LLPU_P08':
+            ordered_groups, ordered_gaitcycles = check_group_configurations(stance_time_symmetry, flattened_raw_sensor,6)
+        else:
+            ordered_groups, ordered_gaitcycles = check_group_configurations(stance_time_symmetry, flattened_raw_sensor,4)
         ordered_group_means = [round(np.mean(group), 3) for group in ordered_groups]
         ordered_group_min = [round(min(group), 3) for group in ordered_groups]
         ordered_group_max = [round(max(group), 3) for group in ordered_groups]
@@ -625,7 +625,7 @@ for participant in participant_list:
         df['Participant'] = participant
 
         # Save or append the DataFrame to a CSV file
-        csv_filename = "C:\\Users\\ekuep\Desktop\\results_groupinfo_GPS.csv"
+        csv_filename = "C:\\Users\\ekuep\Desktop\\results_groupinfo_STSR.csv"
 
         if os.path.isfile(csv_filename):
             # If the file exists, append without writing the header
@@ -692,274 +692,268 @@ for participant in participant_list:
             print(f"Sensor arrangement: {arrangements[sensor_idx]}")
             dtw_mean_distances = []
             #Computing the within group distance for baseline
-            dtw_within = tslearn_dtw_analysis(set1 = raw_sensor[0], set2=None) # type: ignore
-            dtw_mean_distances.append(dtw_within)
-            add_row_to_csv(csv_path, arrangements[sensor_idx],'GPS', 'DTW',participant, ordered_group_means[0], dtw_within)
+            # dtw_within = tslearn_dtw_analysis(set1 = raw_sensor[0], set2=None) # type: ignore
+            # dtw_mean_distances.append(dtw_within)
+            # add_row_to_csv(csv_path, arrangements[sensor_idx],'GPS', 'DTW',participant, ordered_group_means[0], dtw_within)
             
             for j in range(1, len(raw_sensor)):
                 dtw_between = tslearn_dtw_analysis(set1 = raw_sensor[0], set2 = raw_sensor[j]) # type: ignore
                 dtw_mean_distances.append(dtw_between)
-                add_row_to_csv(csv_path, arrangements[sensor_idx],'GPS', 'DTW',participant, ordered_group_means[j], dtw_between)
+                add_row_to_csv(csv_path, arrangements[sensor_idx],'STSR', 'DTW',participant, ordered_group_means[j], dtw_between)
                 
             print(dtw_mean_distances) 
             
             # """ SOM Implementation"""
             # Shuffle and split the list
-            train_arrays, test_arrays = train_test_split(raw_sensor[0], test_size=0.2, random_state=42)
-            train_data = np.concatenate(train_arrays, axis=0)
-            test_data = np.concatenate(test_arrays, axis=0)
-        
+            #train_arrays, test_arrays = train_test_split(raw_sensor[0], test_size=0.2, random_state=42)
+            random.shuffle(raw_sensor[0])
+            train_data = np.concatenate(raw_sensor[0],axis=0)
             print("Training Data Shape:", train_data.shape)
-            #print("Testing Data Shape:", test_data.shape)
             print("Training the SOM on baseline data")
             MDP_mean_deviations = []
             trained_SOM = train_minisom(train_data, learning_rate=0.1, topology='hexagonal', normalize=True) # type: ignore
-            test_baseline = calculate_MDP(test_data, train_data, trained_SOM, normalize=True) # type: ignore
-            MDP_mean_deviations.append(np.mean(test_baseline))
-            add_row_to_csv(csv_path, arrangements[sensor_idx],'GPS','MDP',participant, ordered_group_means[0], np.mean(test_baseline))
-            
-            
+           
             for j in range(1, len(ordered_gaitcycles)):
                 #Shuffle and split the list (only looking at the test data here)
-                train_arrays, test_arrays = train_test_split(raw_sensor[j], test_size=0.2, random_state=42)
-                test_data_upperlevels = np.concatenate(test_arrays, axis=0)
-                test_upperlevels = calculate_MDP(test_data_upperlevels, train_data, trained_SOM, normalize=True) # type: ignore
-                MDP_mean_deviations.append(np.mean(test_upperlevels))
-                add_row_to_csv(csv_path, arrangements[sensor_idx],'GPS','MDP',participant, ordered_group_means[j], np.mean(test_upperlevels))
+                random.shuffle(raw_sensor[j])
+                test_data = np.concatenate(raw_sensor[j],axis=0)
+                MDP_scores = calculate_MDP(test_data, train_data, trained_SOM, normalize=True) # type: ignore
+                MDP_mean_deviations.append(np.mean(MDP_scores))
+                add_row_to_csv(csv_path, arrangements[sensor_idx],'STSR','MDP',participant, ordered_group_means[j], np.mean(MDP_scores))
             
             print(f"MDP mean deviations: {MDP_mean_deviations}")
             
             #Implementing the HMM
-            strides_train_flat = {}
-            strides_test_flat = {}
-            strides_train = {}
-            strides_test = {}
-            resize_len = 40
-            strides_to_concat = 10
-            num_states= 3 #Changed from 5 to 2 #Test 3 as well 
-            train_iterations = 300 
-            train_tolerance = 1e-2
-            num_models_train = 10
-            concat_strides = {}
+            # strides_train_flat = {}
+            # strides_test_flat = {}
+            # strides_train = {}
+            # strides_test = {}
+            # resize_len = 40
+            # strides_to_concat = 10
+            # num_states= 3 #Changed from 5 to 2 #Test 3 as well 
+            # train_iterations = 300 
+            # train_tolerance = 1e-2
+            # num_models_train = 10
+            # concat_strides = {}
    
-            for idx, group in enumerate(raw_sensor):
-                concat_strides[idx] = []
-                group = np.array(group)
-                for i in range(group.shape[0] - strides_to_concat):
-                    temp = []
-                    for j in range(strides_to_concat):
-                        temp.append(group[i + j])
-                    concat_strides[idx].append(np.concatenate(temp, axis=0))
+            # for idx, group in enumerate(raw_sensor):
+            #     concat_strides[idx] = []
+            #     group = np.array(group)
+            #     for i in range(group.shape[0] - strides_to_concat):
+            #         temp = []
+            #         for j in range(strides_to_concat):
+            #             temp.append(group[i + j])
+            #         concat_strides[idx].append(np.concatenate(temp, axis=0))
 
-                concat_strides[idx] = np.array(concat_strides[idx])
-                concat_strides[idx] = signal.filtfilt(b20, a20, concat_strides[idx], axis=1)
+            #     concat_strides[idx] = np.array(concat_strides[idx])
+            #     concat_strides[idx] = signal.filtfilt(b20, a20, concat_strides[idx], axis=1)
                 
-            hmm_models = {}  
+            # hmm_models = {}  
                 
-            for idx, group in enumerate(raw_sensor):
+            # for idx, group in enumerate(raw_sensor):
                 
-                num_models_training = num_models_train #Re initialize the number of models for training 
-                hmm_models[idx] = []
+            #     num_models_training = num_models_train #Re initialize the number of models for training 
+            #     hmm_models[idx] = []
                 
-                for j in range(num_models_training):
-                    train_forward_model = True
-                    k = 0
+            #     for j in range(num_models_training):
+            #         train_forward_model = True
+            #         k = 0
                     
-                    while(train_forward_model):
-                        print('Train Attempt ', k+1, end="\r", flush=True)
+            #         while(train_forward_model):
+            #             print('Train Attempt ', k+1, end="\r", flush=True)
                         
-                        if(j > -1):
-                            np.random.shuffle(concat_strides[idx])
+            #             if(j > -1):
+            #                 np.random.shuffle(concat_strides[idx])
                             
-                        # flatten sequence for hmmlearn train function
-                        strides_sequence_flattened = concat_strides[idx].reshape((concat_strides[idx].shape[0] * concat_strides[idx].shape[1], -1))
+            #             # flatten sequence for hmmlearn train function
+            #             strides_sequence_flattened = concat_strides[idx].reshape((concat_strides[idx].shape[0] * concat_strides[idx].shape[1], -1))
                         
-                        # technically is no training/testing data, but this preserves a few gait cycles to compare the hidden-state sequence predictions of the HMMs
-                        len_train = int(0.95 * len(concat_strides[idx]))
-                        strides_train[idx] = concat_strides[idx][:len_train]
-                        strides_test[idx] = concat_strides[idx][len_train:]
-                        sequence_length = resize_len * strides_to_concat
-                        strides_train_flat[idx] = strides_sequence_flattened[:sequence_length * len_train]
-                        strides_test_flat[idx] = strides_sequence_flattened[sequence_length * len_train:]
+            #             # technically is no training/testing data, but this preserves a few gait cycles to compare the hidden-state sequence predictions of the HMMs
+            #             len_train = int(0.95 * len(concat_strides[idx]))
+            #             strides_train[idx] = concat_strides[idx][:len_train]
+            #             strides_test[idx] = concat_strides[idx][len_train:]
+            #             sequence_length = resize_len * strides_to_concat
+            #             strides_train_flat[idx] = strides_sequence_flattened[:sequence_length * len_train]
+            #             strides_test_flat[idx] = strides_sequence_flattened[sequence_length * len_train:]
 
-                        hmm_model = HMMTrainer(n_components = num_states, n_iter = train_iterations, tolerance = train_tolerance)
-                        hmm_model.train(strides_train_flat[idx], sequence_length, len_train)
+            #             hmm_model = HMMTrainer(n_components = num_states, n_iter = train_iterations, tolerance = train_tolerance)
+            #             hmm_model.train(strides_train_flat[idx], sequence_length, len_train)
 
 
-                        # double checks for left-to-right architecture in transition matrix
-                        valid_rows = 0
-                        a_mat = hmm_model.model.transmat_
-                        for i, row in enumerate(a_mat):
-                            temp = np.argpartition(np.roll(row, -i), -2)[-2:]
-                            if((np.array(temp) == np.array([0,1])).all() or (np.array(temp) == np.array([1,0])).all()):
-                                valid_rows = valid_rows + 1
+            #             # double checks for left-to-right architecture in transition matrix
+            #             valid_rows = 0
+            #             a_mat = hmm_model.model.transmat_
+            #             for i, row in enumerate(a_mat):
+            #                 temp = np.argpartition(np.roll(row, -i), -2)[-2:]
+            #                 if((np.array(temp) == np.array([0,1])).all() or (np.array(temp) == np.array([1,0])).all()):
+            #                     valid_rows = valid_rows + 1
 
-                        # correct_second_state = [i for i in range(num_states - 1)]
-                        # correct_second_state.append(0)        
-                        # for i, row in enumerate(hmm_model.model.transmat_):
-                        #     max_state = np.argmax(row)
-                        #     if(max_state == i):
-                        #         temp = [j for j in row if not (j == row[max_state])]
-                        #         if(np.argmax(temp) == correct_second_state[i]):
-                        #             valid_rows = valid_rows + 1
+            #             # correct_second_state = [i for i in range(num_states - 1)]
+            #             # correct_second_state.append(0)        
+            #             # for i, row in enumerate(hmm_model.model.transmat_):
+            #             #     max_state = np.argmax(row)
+            #             #     if(max_state == i):
+            #             #         temp = [j for j in row if not (j == row[max_state])]
+            #             #         if(np.argmax(temp) == correct_second_state[i]):
+            #             #             valid_rows = valid_rows + 1
 
-                        #if model is left-to-right, consider model trained, train next model (until num_models_train reached)
+            #             #if model is left-to-right, consider model trained, train next model (until num_models_train reached)
                         
-                        if(valid_rows == num_states):
-                            train_forward_model = False
-                        k = k + 1
-                    hmm_models[idx].append(hmm_model)
+            #             if(valid_rows == num_states):
+            #                 train_forward_model = False
+            #             k = k + 1
+            #         hmm_models[idx].append(hmm_model)
 
-            print('done')
+            # print('done')
             
-            test_predict = strides_test[0][1] #2nd element of idx = 0
-            min_predict = np.min(test_predict[:,1])
-            max_predict = np.max(test_predict[:,1])
+            # test_predict = strides_test[0][1] #2nd element of idx = 0
+            # min_predict = np.min(test_predict[:,1])
+            # max_predict = np.max(test_predict[:,1])
             
             
-            def align_states(trained_hmm_model, roll_amount=0):
-                new_hmm = copy.deepcopy(trained_hmm_model)
-                array_order = np.roll(np.arange(num_states), roll_amount)
+            # def align_states(trained_hmm_model, roll_amount=0):
+            #     new_hmm = copy.deepcopy(trained_hmm_model)
+            #     array_order = np.roll(np.arange(num_states), roll_amount)
 
-                new_hmm.model.transmat_ = new_hmm.model.transmat_[array_order,: ]
-                for i, row in enumerate(new_hmm.model.transmat_):
-                    new_hmm.model.transmat_[i] = np.roll(new_hmm.model.transmat_[i], roll_amount)
+            #     new_hmm.model.transmat_ = new_hmm.model.transmat_[array_order,: ]
+            #     for i, row in enumerate(new_hmm.model.transmat_):
+            #         new_hmm.model.transmat_[i] = np.roll(new_hmm.model.transmat_[i], roll_amount)
 
-                new_hmm.model.means_ = new_hmm.model.means_[array_order, :]
-                new_hmm.model.covars_ = new_hmm.model.covars_[array_order, :]
-                new_hmm.model.startprob_ = new_hmm.model.startprob_[array_order]
-                return new_hmm 
+            #     new_hmm.model.means_ = new_hmm.model.means_[array_order, :]
+            #     new_hmm.model.covars_ = new_hmm.model.covars_[array_order, :]
+            #     new_hmm.model.startprob_ = new_hmm.model.startprob_[array_order]
+            #     return new_hmm 
 
-            pred_vals = np.ones(num_states)
+            # pred_vals = np.ones(num_states)
             
-            for state in range(num_states):
-                pred_vals[state] = min_predict + ((state * (max_predict - min_predict)) / (num_states - 1))
+            # for state in range(num_states):
+            #     pred_vals[state] = min_predict + ((state * (max_predict - min_predict)) / (num_states - 1))
         
-            roll_amounts = {}
-            match_trials = {}
+            # roll_amounts = {}
+            # match_trials = {}
 
-            for idx, group in enumerate(raw_sensor):
-                roll_amounts[idx] = [0 for i in range(num_models_train)]
-                match_trials[idx] = 0
+            # for idx, group in enumerate(raw_sensor):
+            #     roll_amounts[idx] = [0 for i in range(num_models_train)]
+            #     match_trials[idx] = 0
 
-            shift_all = 0
+            # shift_all = 0
         
-            def find_best_alignment(hmm_1, hmm_2, test_stride, n_states):
-                min_distance = 9999999
-                best_roll = 0
+            # def find_best_alignment(hmm_1, hmm_2, test_stride, n_states):
+            #     min_distance = 9999999
+            #     best_roll = 0
 
-                for j in range(n_states):
-                    new_hmm = align_states(hmm_2, j)
-                    prediction_1 = hmm_1.model.predict(test_stride)
-                    prediction_2 = new_hmm.model.predict(test_stride)
+            #     for j in range(n_states):
+            #         new_hmm = align_states(hmm_2, j)
+            #         prediction_1 = hmm_1.model.predict(test_stride)
+            #         prediction_2 = new_hmm.model.predict(test_stride)
 
-                    distance = np.sum((prediction_1 - prediction_2) ** 2)
-                    if (distance < min_distance):
-                        min_distance = distance
-                        best_roll = j
+            #         distance = np.sum((prediction_1 - prediction_2) ** 2)
+            #         if (distance < min_distance):
+            #             min_distance = distance
+            #             best_roll = j
 
-                return best_roll
+            #     return best_roll
 
-            predictions = {}
-            hmm_models_aligned_states = {}
+            # predictions = {}
+            # hmm_models_aligned_states = {}
             
-            for idx, group in enumerate(raw_sensor):
+            # for idx, group in enumerate(raw_sensor):
                 
-                predictions[idx] = []
-                hmm_models_aligned_states[idx] = []
-                match_trials[idx] = find_best_alignment(hmm_models[0][0], hmm_models[idx][0], test_predict, num_states)
+            #     predictions[idx] = []
+            #     hmm_models_aligned_states[idx] = []
+            #     match_trials[idx] = find_best_alignment(hmm_models[0][0], hmm_models[idx][0], test_predict, num_states)
                 
-                roll_amounts[idx] = [0] * len(hmm_models[idx]) #Can now handle different lengths of trained models 
+            #     roll_amounts[idx] = [0] * len(hmm_models[idx]) #Can now handle different lengths of trained models 
                 
-                for j in range(len(hmm_models[idx])):
-                    roll_amounts[idx][j] = find_best_alignment(hmm_models[idx][0], hmm_models[idx][j], test_predict, num_states) + match_trials[idx]
-                    # roll_amounts[idx][j] = 0
-                    hmm_models_aligned_states[idx].append(align_states(hmm_models[idx][j], roll_amounts[idx][j] + shift_all))
-                    predictions[idx].append(hmm_models_aligned_states[idx][-1].model.predict(test_predict))
+            #     for j in range(len(hmm_models[idx])):
+            #         roll_amounts[idx][j] = find_best_alignment(hmm_models[idx][0], hmm_models[idx][j], test_predict, num_states) + match_trials[idx]
+            #         # roll_amounts[idx][j] = 0
+            #         hmm_models_aligned_states[idx].append(align_states(hmm_models[idx][j], roll_amounts[idx][j] + shift_all))
+            #         predictions[idx].append(hmm_models_aligned_states[idx][-1].model.predict(test_predict))
                         
             
-                #bunch of stuff for visualizing the hidden-state sequence predictions
+            #     #bunch of stuff for visualizing the hidden-state sequence predictions
 
-                #print(roll_amounts[trial_types[1]][0])
-                fig, ax = plt.subplots()
-                fig.set_size_inches(12,8)
-                plt.plot(test_predict[:,0])
+            #     #print(roll_amounts[trial_types[1]][0])
+            #     fig, ax = plt.subplots()
+            #     fig.set_size_inches(12,8)
+            #     plt.plot(test_predict[:,0])
 
-                plt.plot([pred_vals[j] for j in predictions[0]][0], 'k')
-                plt.plot([pred_vals[j] for j in predictions[0]][4], 'r')
+            #     plt.plot([pred_vals[j] for j in predictions[0]][0], 'k')
+            #     plt.plot([pred_vals[j] for j in predictions[0]][4], 'r')
 
-                # plt.plot([pred_vals[j] for j in predictions_post[4]], 'k')
-                # plt.plot([pred_vals[j] for j in predictions_post[2]], 'r')
+            #     # plt.plot([pred_vals[j] for j in predictions_post[4]], 'k')
+            #     # plt.plot([pred_vals[j] for j in predictions_post[2]], 'r')
 
-                # def trial_avg_and_CI(signal_set):
-                #     conf_int_mult = 1.00    # confidence interval multiplier for 1 std
+            #     # def trial_avg_and_CI(signal_set):
+            #     #     conf_int_mult = 1.00    # confidence interval multiplier for 1 std
 
-                #     avg_signal = np.mean(signal_set, axis=0)
-                #     std_signal = np.std(signal_set, axis=0)
-                #     upper_bound = avg_signal + (conf_int_mult * std_signal)
-                #     lower_bound = avg_signal - (conf_int_mult * std_signal)
+            #     #     avg_signal = np.mean(signal_set, axis=0)
+            #     #     std_signal = np.std(signal_set, axis=0)
+            #     #     upper_bound = avg_signal + (conf_int_mult * std_signal)
+            #     #     lower_bound = avg_signal - (conf_int_mult * std_signal)
 
-                #     return avg_signal, upper_bound, lower_bound
+            #     #     return avg_signal, upper_bound, lower_bound
 
-                # def confidence_plot(plot_signals, fig_ax, trial_num):
-                #     plot_signals = trial_avg_and_CI(plot_signals)
-                #     x = np.arange(len(plot_signals[0]))
-                #     fig_ax.plot(x, plot_signals[0], color=plot_colors[trial_num])
-                #     fig_ax.fill_between(x, plot_signals[1], plot_signals[2], color=plot_colors[trial_num], alpha=0.2)
+            #     # def confidence_plot(plot_signals, fig_ax, trial_num):
+            #     #     plot_signals = trial_avg_and_CI(plot_signals)
+            #     #     x = np.arange(len(plot_signals[0]))
+            #     #     fig_ax.plot(x, plot_signals[0], color=plot_colors[trial_num])
+            #     #     fig_ax.fill_between(x, plot_signals[1], plot_signals[2], color=plot_colors[trial_num], alpha=0.2)
 
-                # textstr = '\n'.join((
-                #     r'$tolerance=%.5f$' % (train_tolerance, ),
-                #     r'$iterations=%d$' % (train_iterations, ),
-                #     r'$states=%d$' % (num_states, )))
-                # props = dict(boxstyle='round', facecolor='wheat', alpha=1)
-                # ax.text(1.05, 0.95, textstr, transform=ax.transAxes, fontsize=14,
-                #         verticalalignment='top', bbox=props)
+            #     # textstr = '\n'.join((
+            #     #     r'$tolerance=%.5f$' % (train_tolerance, ),
+            #     #     r'$iterations=%d$' % (train_iterations, ),
+            #     #     r'$states=%d$' % (num_states, )))
+            #     # props = dict(boxstyle='round', facecolor='wheat', alpha=1)
+            #     # ax.text(1.05, 0.95, textstr, transform=ax.transAxes, fontsize=14,
+            #     #         verticalalignment='top', bbox=props)
 
-                #plt.show()
+            #     #plt.show()
 
-            symmranges = []
-            mean_difs = []
+            # symmranges = []
+            # mean_difs = []
                     
-            if num_models_train == 1:
-                for j, group in enumerate(raw_sensor):
-                    sum_dif = 0
-                    count = 0
-                    if (j == 0):
-                        m = 1 #only want the other trained model
-                    else:
-                        m = 0
-                    x = calculate_state_correspondence_matrix(hmm_models_aligned_states[0][0], hmm_models_aligned_states[j][m], num_states)
-                    sum_dif = sum_dif + calculate_gini_index(x, num_states)
-                    # log HMM-SM similarity
-                    print('%s - %s  :  %.5f' % (ordered_group_means[0], ordered_group_means[j], sum_dif))
-                    symmrange = '%s - %s' % (ordered_group_means[0], ordered_group_means[j])
-                    add_row_to_csv(csv_path, arrangements[sensor_idx],'GPS','HMM-SM',participant, symmrange, sum_dif)
+            # if num_models_train == 1:
+            #     for j, group in enumerate(raw_sensor):
+            #         sum_dif = 0
+            #         count = 0
+            #         if (j == 0):
+            #             m = 1 #only want the other trained model
+            #         else:
+            #             m = 0
+            #         x = calculate_state_correspondence_matrix(hmm_models_aligned_states[0][0], hmm_models_aligned_states[j][m], num_states)
+            #         sum_dif = sum_dif + calculate_gini_index(x, num_states)
+            #         # log HMM-SM similarity
+            #         print('%s - %s  :  %.5f' % (ordered_group_means[0], ordered_group_means[j], sum_dif))
+            #         symmrange = '%s - %s' % (ordered_group_means[0], ordered_group_means[j])
+            #         add_row_to_csv(csv_path, arrangements[sensor_idx],'GPS','HMM-SM',participant, symmrange, sum_dif)
                     
-            else: #If averaging a larger set (multiple HMMs trained)
-                # i and j iterate over the trial types.
-                # compare all permutations between HMMs in trial_types[i] and trial_types[j] to compute a mean HMM-SM similarity
-                # between the two symmetry ranges. If i and j are the same (e.g., comparing within a symmetry range), don't compare
-                # HMM to itself
-                for j, group in enumerate(raw_sensor):
-                    sum_dif = 0
-                    count = 0
-                    for k in range(num_models_train):
-                        if(j == 0): #Always comparing to the first group, so if j (other group is same as baseline, make sure it is testing against )
-                            indices = [a for a in range(num_models_train) if (not a == k)]
-                        else:
-                            indices = np.arange(num_models_train)
-                        for m in indices:
-                            x = calculate_state_correspondence_matrix(hmm_models_aligned_states[0][k], hmm_models_aligned_states[j][m], num_states)
-                            sum_dif = sum_dif + calculate_gini_index(x, num_states)
-                            count = count+1
+            # else: #If averaging a larger set (multiple HMMs trained)
+            #     # i and j iterate over the trial types.
+            #     # compare all permutations between HMMs in trial_types[i] and trial_types[j] to compute a mean HMM-SM similarity
+            #     # between the two symmetry ranges. If i and j are the same (e.g., comparing within a symmetry range), don't compare
+            #     # HMM to itself
+            #     for j, group in enumerate(raw_sensor):
+            #         sum_dif = 0
+            #         count = 0
+            #         for k in range(num_models_train):
+            #             if(j == 0): #Always comparing to the first group, so if j (other group is same as baseline, make sure it is testing against )
+            #                 indices = [a for a in range(num_models_train) if (not a == k)]
+            #             else:
+            #                 indices = np.arange(num_models_train)
+            #             for m in indices:
+            #                 x = calculate_state_correspondence_matrix(hmm_models_aligned_states[0][k], hmm_models_aligned_states[j][m], num_states)
+            #                 sum_dif = sum_dif + calculate_gini_index(x, num_states)
+            #                 count = count+1
 
-                    # log average HMM-SM similarity
-                    mean_dif = sum_dif / count
-                    print('%s - %s  :  %.5f' % (ordered_group_means[0], ordered_group_means[j], mean_dif))
-                    symmrange = '%s - %s' % (round(ordered_group_means[0],3), round(ordered_group_means[j],3))
-                    symmranges.append(symmrange)
-                    mean_difs.append(mean_dif)
-                    add_row_to_csv(csv_path, arrangements[sensor_idx],'GPS','HMM-SM',participant, symmrange, mean_dif)
+            #         # log average HMM-SM similarity
+            #         mean_dif = sum_dif / count
+            #         print('%s - %s  :  %.5f' % (ordered_group_means[0], ordered_group_means[j], mean_dif))
+            #         symmrange = '%s - %s' % (round(ordered_group_means[0],3), round(ordered_group_means[j],3))
+            #         symmranges.append(symmrange)
+            #         mean_difs.append(mean_dif)
+            #         add_row_to_csv(csv_path, arrangements[sensor_idx],'GPS','HMM-SM',participant, symmrange, mean_dif)
                     
                 
                 

@@ -113,7 +113,7 @@ def train_minisom(control_data, learning_rate=0.1, topology='hexagonal', normali
     print("Map size:",msize)
     print("Number of map units",x*y)
     
-    steps = 200 # Number of iterations - previous heuristic: 500 * number of network units [2] 
+    steps = 20 # Number of iterations - previous heuristic: 500 * number of network units [2] 
     #steps = int(10*(x*y)/control_data.shape[0]) #Based on .trainlen = 10*m/n (m is # map units, n is the number of training samples)
     sigma = max(msize) / 4 # Sigma used: Heuristic: max(msize)/4 [1] 
     
