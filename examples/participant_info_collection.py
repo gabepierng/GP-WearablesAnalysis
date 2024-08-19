@@ -94,7 +94,7 @@ for subfolder_name in os.listdir(base_directory):
             part_strides = {}
             part_gait_params = {}
             part_kinematic_params = {}
-            trial_type = 'AB'
+            trial_type = 'LLPU'
             strides = 0
             for filename in os.listdir(excel_data_path):
                 #if filename.endswith('.csv') and filename.startswith('Baseline'):
@@ -106,49 +106,49 @@ for subfolder_name in os.listdir(base_directory):
                         partitioned_mvn_data = XsensGaitParser.get_partitioned_mvn_data()
                         gait_params = XsensGaitParser.get_gait_param_info()
                         
-                        step_lengths = gait_params['spatio_temp'][10]
+                        # step_lengths = gait_params['spatio_temp'][10]
                         
                         
-                        step_lengths_intact = step_lengths[intact_side]/height_m 
-                        step_lengths_list_intact.append(step_lengths_intact)
-                        step_lengths_prosth = step_lengths[prosth_side]/height_m 
-                        step_lengths_list_prosth.append(step_lengths_prosth)
+                        # step_lengths_intact = step_lengths[intact_side]/height_m 
+                        # step_lengths_list_intact.append(step_lengths_intact)
+                        # step_lengths_prosth = step_lengths[prosth_side]/height_m 
+                        # step_lengths_list_prosth.append(step_lengths_prosth)
                         
-                        knee_roms = gait_params['spatio_temp'][13]
-                        # Isolate the sagittal plane angle (flexion/extension)
-                        knee_ROMs_full = [
-                        [sublist[:][0][-1], sublist[:][1][-1]]
-                        for sublist in knee_roms]
+                        # knee_roms = gait_params['spatio_temp'][13]
+                        # # Isolate the sagittal plane angle (flexion/extension)
+                        # knee_ROMs_full = [
+                        # [sublist[:][0][-1], sublist[:][1][-1]]
+                        # for sublist in knee_roms]
                         
-                        knee_ROMs_sideofinterest = [
-                        sublist[:][intact_side]
-                        for sublist in knee_ROMs_full] 
+                        # knee_ROMs_sideofinterest = [
+                        # sublist[:][intact_side]
+                        # for sublist in knee_ROMs_full] 
                     
-                        knee_roms_list.append(knee_ROMs_sideofinterest)   
+                        # knee_roms_list.append(knee_ROMs_sideofinterest)   
                         
-                        hip_roms = gait_params['spatio_temp'][14]
-                        # Isolate the sagittal plane angle (flexion/extension)
-                        hip_ROMs_full = [
-                        [sublist[:][0][-1], sublist[:][1][-1]]
-                        for sublist in hip_roms]
+                        # hip_roms = gait_params['spatio_temp'][14]
+                        # # Isolate the sagittal plane angle (flexion/extension)
+                        # hip_ROMs_full = [
+                        # [sublist[:][0][-1], sublist[:][1][-1]]
+                        # for sublist in hip_roms]
                         
-                        hip_ROMs_sideofinterest = [
-                        sublist[:][intact_side]
-                        for sublist in hip_ROMs_full] 
+                        # hip_ROMs_sideofinterest = [
+                        # sublist[:][intact_side]
+                        # for sublist in hip_ROMs_full] 
                         
-                        hip_roms_list.append(hip_ROMs_sideofinterest) 
+                        # hip_roms_list.append(hip_ROMs_sideofinterest) 
                         
-                        ankle_roms = gait_params['spatio_temp'][15]
+                        # ankle_roms = gait_params['spatio_temp'][15]
                         
-                        ankle_ROMs_full = [
-                        [sublist[:][0][-1], sublist[:][1][-1]]
-                        for sublist in ankle_roms]
+                        # ankle_ROMs_full = [
+                        # [sublist[:][0][-1], sublist[:][1][-1]]
+                        # for sublist in ankle_roms]
                         
-                        ankle_ROMs_sideofinterest = [
-                        sublist[:][prosth_side]
-                        for sublist in ankle_ROMs_full] 
+                        # ankle_ROMs_sideofinterest = [
+                        # sublist[:][prosth_side]
+                        # for sublist in ankle_ROMs_full] 
                         
-                        ankle_roms_list.append(ankle_ROMs_sideofinterest) 
+                        # ankle_roms_list.append(ankle_ROMs_sideofinterest) 
                 
                         
                         # Aggregate all of the data for each participant 
@@ -177,9 +177,13 @@ for subfolder_name in os.listdir(base_directory):
                     
             # Compute symmetry values
             if trial_type in part_gait_params:
-                stance_time_symmetry = [item for sublist in [i[12] for i in part_gait_params[trial_type]] for item in
-                                        sublist]
-
+                if prosth_side == 1:
+                    stance_time_symmetry = [1/item for sublist in [i[11] for i in part_gait_params[trial_type]] for item in
+                                            sublist]
+                else:
+                    stance_time_symmetry = [item for sublist in [i[11] for i in part_gait_params[trial_type]] for item in
+                                            sublist]
+                    
                 knee_roms = [item for sublist in knee_roms_list for item in sublist]
                 step_lengths_intact = [item for sublist in step_lengths_list_intact for item in sublist]
                 step_lengths_prosth = [item for sublist in step_lengths_list_prosth for item in sublist]
@@ -190,39 +194,38 @@ for subfolder_name in os.listdir(base_directory):
                 #Evaluate normality of datasets:
                 from scipy import stats
                 
-                
-                
                 # Generate histogram and scatter plot side by side
                 fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 6))
 
                 # Histogram
-                bincount = int(np.sqrt(len(ankle_roms))) #Bin count selected based on the "square root rule (for now)"
-                ax1.hist(ankle_roms, bins=bincount, edgecolor='black', alpha=0.7)
-                ax1.set_title(f'Sagittal Ankle ROM (Prosthetic Side) - {subfolder_name}')
-                ax1.set_xlabel('Sagittal Ankle ROM (deg)')
-                ax1.set_ylabel('Frequency')
+                bincount = int(np.sqrt(len(stance_time_symmetry))) #Bin count selected based on the "square root rule (for now)"
+                ax1.hist(stance_time_symmetry, bins=bincount, edgecolor='black', alpha=0.7)
+                ax1.set_title(f'STSR - {subfolder_name}')
+                # ax1.set_xlabel('Sagittal Ankle ROM (deg)')
+                # ax1.set_ylabel('Frequency')
                 ax1.grid(True)
 
                 # Scatter plot
-                y = (np.zeros(len(ankle_roms))) + np.random.normal(0, 0.02, len(ankle_roms))
-                ax2.scatter(ankle_roms, y, s=6, color='black')
-                ax2.set_title(f'Ankle Hip ROM (Prosthetic Side) - {subfolder_name}')
-                ax2.set_xlabel('Ankle Hip ROM (deg)')
+                y = (np.zeros(len(stance_time_symmetry))) + np.random.normal(0, 0.02, len(stance_time_symmetry))
+                ax2.scatter(stance_time_symmetry, y, s=6, color='black')
+                # ax2.set_title(f'Ankle Hip ROM (Prosthetic Side) - {subfolder_name}')
+                # ax2.set_xlabel('Ankle Hip ROM (deg)')
                 ax2.grid(True)
 
+                plt.savefig(f"C:\\Users\\ekuep\\Desktop\\STSR_{participant_id}.jpg")
                 plt.tight_layout()
-                
+                plt.show()
                 # plt.figure()
                 # y = (np.zeros(len(step_lengths_intact))) + np.random.normal(0, 0.02, len(step_lengths_intact))
                 # plt.scatter(step_lengths_intact, y, label = 'Intact limb')
                 # plt.scatter(step_lengths_prosth, y, label = 'Prosthetic limb')
                 # plt.title(f"Sagittal Knee ROM - {participant_id}")
                 # plt.legend()
-                plt.savefig(f'Q:\\main_propellab\\Users\\Ng, Gabe\\Summer Student 2024\\LLPU_DataSummaries\\ankleROM\\Sagittal_ProstheticSide\\{subfolder_name}_prosthetic_ankleROM.jpg')
+                #plt.savefig(f'Q:\\main_propellab\\Users\\Ng, Gabe\\Summer Student 2024\\LLPU_DataSummaries\\ankleROM\\Sagittal_ProstheticSide\\{subfolder_name}_prosthetic_ankleROM.jpg')
 
                 # Compute and print additional stats
-                speed = [item for sublist in [i[16] for i in part_gait_params[trial_type]] for item in sublist]
-                cadence = [item for sublist in [i[17] for i in part_gait_params[trial_type]] for item in sublist]
+                # speed = [item for sublist in [i[16] for i in part_gait_params[trial_type]] for item in sublist]
+                # cadence = [item for sublist in [i[17] for i in part_gait_params[trial_type]] for item in sublist]
 
                 
                 # print('Mean Speed: %.3f ± %.3f' % (np.mean(speed), np.std(speed)))
