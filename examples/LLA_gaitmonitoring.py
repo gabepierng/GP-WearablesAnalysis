@@ -272,7 +272,7 @@ def finding_groupings(num_groups, gait_parameter, gait_cycles, percent_grading, 
 """
 
 def random_sampling(groups, grouped_gait_cycles, sample_size=50):
-    def adaptive_subsample(group, first_mean, i, percent_grading=0.03, tolerance=0.005, sample_size=50, max_iterations=10000):
+    def adaptive_subsample(group, first_mean, i, percent_grading=0.4, tolerance=0.05, sample_size=50, max_iterations=10000):
         available_indices = list(range(len(group)))  # Make a list that spans all the indices
         sample_indices = np.random.choice(available_indices, size=sample_size, replace=False)
         
@@ -530,26 +530,7 @@ for participant in participant_list:
                         part_gait_params[trial_type] = [gait_params['spatio_temp']]
                         part_kinematic_params[trial_type] = gait_params['kinematics']
                     file_name = os.path.basename(blob.name)
-                    
-                    # def get_roms_sideofinterest(roms, side):
-                    #     return [sublist[side] for sublist in [[sublist[0][-1], sublist[1][-1]] for sublist in roms]]
 
-                    # # Extract parameters
-                    # knee_roms = gait_params['spatio_temp'][13]
-                    # hip_roms = gait_params['spatio_temp'][14]
-                    # ankle_roms = gait_params['spatio_temp'][15]
-                    # step_lengths = gait_params['spatio_temp'][10]
-
-                    # # Get ROMs for the side of interest
-                    # knee_roms_list.append(get_roms_sideofinterest(knee_roms, non_prosth_side))
-                    # hip_roms_list.append(get_roms_sideofinterest(hip_roms, non_prosth_side))
-                    # ankle_roms_list.append(get_roms_sideofinterest(ankle_roms, non_prosth_side))
-
-                    # # Normalize step length if required
-                    # step_length = step_lengths[prosth_side] / height_m if height_normalized else step_lengths[prosth_side]
-                    # step_lengths_list.append(step_length)
-                      
-                        
                 except IndexError as e: #Exception based on an Index Error encountered in excel_reader_gcp.py **
                     #print(f"File skipped: gs://{bucket_name}/{blob.name} due to error: {e}")
                     continue                              
@@ -600,11 +581,11 @@ for participant in participant_list:
             for item in sublist:
                 flattened_raw_sensor.append(item) #Flatten to individual gait cycles 
                 
-        #ordered_groups, ordered_gaitcycles = check_group_configurations(gait_scores_list, flattened_raw_sensor,3)
-        if participant == 'LLPU_P08':
-            ordered_groups, ordered_gaitcycles = check_group_configurations(stance_time_symmetry, flattened_raw_sensor,13)
-        else:
-            ordered_groups, ordered_gaitcycles = check_group_configurations(stance_time_symmetry, flattened_raw_sensor,4)
+        ordered_groups, ordered_gaitcycles = check_group_configurations(gait_scores_list, flattened_raw_sensor,3)
+        # if participant == 'LLPU_P08':
+        #     ordered_groups, ordered_gaitcycles = check_group_configurations(stance_time_symmetry, flattened_raw_sensor,13)
+        # else:
+        #     ordered_groups, ordered_gaitcycles = check_group_configurations(stance_time_symmetry, flattened_raw_sensor,4)
         ordered_group_means = [round(np.mean(group), 3) for group in ordered_groups]
         ordered_group_min = [round(min(group), 3) for group in ordered_groups]
         ordered_group_max = [round(max(group), 3) for group in ordered_groups]
@@ -639,23 +620,8 @@ for participant in participant_list:
 
         print(f"Results saved to {csv_filename}")
     
-    
         print(group_lengths)
         print(ordered_group_means)
-    
-        # #Determining which group will be baseline based on which end is closer to the mean of the baseline stance time symmetry scores 
-        # first_group_diff = abs(group_means[0] - stance_time_symmetry_baseline_mean)
-        # last_group_diff = abs(group_means[-1] - stance_time_symmetry_baseline_mean)
-
-        # # Determine the order of the groups
-        # if first_group_diff <= last_group_diff:
-        #     ordered_groups = groups  # Retain the order
-        #     ordered_gaitcycles = gaitcycles
-        #     ordered_group_means = group_means
-        # else:
-        #     ordered_groups = groups[::-1]  # Reverse the order    
-        #     ordered_gaitcycles = gaitcycles[::-1]
-        #     ordered_group_means = group_means[::-1]
 
         for k, group in enumerate(ordered_groups):
             print(f"Group {k+1}: {len(group)} (Mean: {np.mean(group) if group else 'N/A'})")

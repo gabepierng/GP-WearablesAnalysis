@@ -782,9 +782,20 @@ class XsensGaitDataParser:
                                             else self.divide_into_strides(self.gait_events, acc_data, side='r', signal_num=i) for i in range(len(sensors))]
         
         # specific participant occasionally knocked left thigh-sensor mid-trial. This filters out those strides
-        if('/MI' in mvn_csv_filename):
-            partitioned_mvn_data['gyro_data'][5] = [stride for stride in self.partitioned_mvn_data['gyro_data'][5] if np.max(stride[:,1]) - np.min(stride[:,1]) < 4.5]
-        
+        if '/MI' in mvn_csv_filename:
+            # Define the filtering condition
+            def get_filtered_indices(data):
+                return [i for i, stride in enumerate(data) if np.max(stride[:,1]) - np.min(stride[:,1]) < 4.5]
+
+            # Get the indices of filtered strides from 'gyro_data[5]'
+            filtered_indices = get_filtered_indices(self.partitioned_mvn_data['gyro_data'][5])
+            
+            # Apply the same indices to filter other data types
+            self.partitioned_mvn_data['gyro_data'][5] = [self.partitioned_mvn_data['gyro_data'][5][i] for i in filtered_indices]
+            self.partitioned_mvn_data['gyro_data'][2] = [self.partitioned_mvn_data['gyro_data'][2][i] for i in filtered_indices]
+            self.partitioned_mvn_data['acc_data'][5] = [self.partitioned_mvn_data['acc_data'][5][i] for i in filtered_indices]
+            self.partitioned_mvn_data['acc_data'][2] = [self.partitioned_mvn_data['acc_data'][2][i] for i in filtered_indices]
+            
         # print('Calculating spatiotemporal parameters...')
         self.gait_params['spatio_temp'] = self.calc_spatio_temp_params(self.gait_events, pelvis_position, foot_position, frame_rate, knee_angles, hip_angles)
 
