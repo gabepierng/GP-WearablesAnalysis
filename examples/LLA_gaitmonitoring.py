@@ -213,13 +213,29 @@ def reshape_vector(vectors_orig, new_size, num_axes=3):
         trial_reshaped.append(vec_cubic)
     return np.array(trial_reshaped)
 
+def normalize_signal(signal):
+    """
+    Normalizes the signal to have a variance of 1 along the second axis.
+    """
+    mean = np.mean(signal, axis=1, keepdims=True)
+    variance = np.var(signal, axis=1, keepdims=True)
+    normalized_signal = (signal - mean) / np.sqrt(variance)
+    return normalized_signal
+
 #uses dictionaries to extract the relevant raw sensor data, reshapes the data, then concatenates gyro and accelerometer signals together 
 def organize_signals(sensor_mappings, gyro_signal, accel_signal):
     combined_signals = {}
     for location, sensor in sensor_mappings.items():
         reshaped_gyro = reshape_vector(gyro_signal[sensor], 40, 3)
         reshaped_accel = reshape_vector(accel_signal[sensor], 40, 3)
-        combined_signals[location] = np.concatenate((reshaped_gyro, reshaped_accel), axis=2) #Concatenates to gyro x,y,z and accel x,y,z
+        
+        normalized_gyro = normalize_signal(reshaped_gyro)
+        normalized_accel = normalize_signal(reshaped_accel)
+        
+        # Concatenate the normalized gyro and accel signals
+        combined_signals[location] = np.concatenate((normalized_gyro, normalized_accel), axis=2)
+        # #combined_signals[location] = reshaped_gyro
+        #combined_signals[location] = np.concatenate((reshaped_gyro, reshaped_accel), axis=2) #Concatenates to gyro x,y,z and accel x,y,z
     return combined_signals
 
 """ Data grouping/splitting pipeline:"""

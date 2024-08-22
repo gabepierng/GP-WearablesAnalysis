@@ -106,9 +106,9 @@ Input:  strides = list of strides to plot (if confidence plot, must be 2d reshap
 def visualize_strides(strides, fig_ax, signal_axis, trial_num, confidence_plot = True):
     
     if(confidence_plot):
-#         plot_signals = trial_avg_and_CI(strides[:,:,signal_axis])
+        #plot_signals = trial_avg_and_CI(strides[:,:,signal_axis])
         plot_signals = trial_avg_and_CI(strides[:,:])
-        x = np.linspace(0, 100, strides.shape[1])
+        x = np.linspace(0, strides.shape[1], strides.shape[1])
         fig_ax.plot(x, plot_signals[0], color=plot_colors[trial_num])
         fig_ax.fill_between(x, plot_signals[1], plot_signals[2], color=plot_colors[trial_num], alpha=0.2)
         
@@ -123,7 +123,7 @@ def visualize_strides(strides, fig_ax, signal_axis, trial_num, confidence_plot =
                 plt.draw()
                 plt.pause(0.001)
 
-    #plt.show()
+    # plt.show()
 
 
 '''
