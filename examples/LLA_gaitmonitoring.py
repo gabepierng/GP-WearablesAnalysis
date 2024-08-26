@@ -26,6 +26,18 @@ import re
 b20, a20 = scipy.signal.butter(N=4, Wn = 0.8, btype = 'lowpass')  # Wn = 0.8 = 40 / Nyquist F = 50Hz
 run_time = datetime.datetime.now().strftime("%d-%m-%y_%H-%M")
 
+def add_row_to_csv(csv_path, sensor_config, gait_param, algorithm, participant_num, level, parameter):
+    header = ['csv_path', 'sensor_config', 'trial_type', 'algorithm', 'participant_num', 'Level', 'Similarity/Deviation']
+    file_exists = os.path.isfile(csv_path)
+    with open(csv_path, mode='a', newline='') as file:
+        writer = csv.writer(file)
+        # If the file doesn't exist or is empty, write the header first
+        if not file_exists or os.path.getsize(csv_path) == 0:
+            writer.writerow(header)
+        # Write the row data
+        writer.writerow([csv_path, sensor_config, gait_param, algorithm, participant_num, level, parameter])
+        
+
 def reshape_vector(vectors_orig, new_size, num_axes=3):
     x_new = np.linspace(0, 100, new_size)
     trial_reshaped = []
@@ -35,16 +47,6 @@ def reshape_vector(vectors_orig, new_size, num_axes=3):
         vec_cubic = np.array([func_cubic[i](x_new) for i in range(num_axes)]).transpose()
         trial_reshaped.append(vec_cubic)
     return np.array(trial_reshaped)
-
-#uses dictionaries to extract the relevant raw sensor data, reshapes the data, then concatenates gyro and accelerometer signals together 
-def organize_signals(sensor_mappings, gyro_signal, accel_signal):
-    combined_signals = {}
-    for location, sensor in sensor_mappings.items():
-        reshaped_gyro = reshape_vector(gyro_signal[sensor], 40, 3)
-        reshaped_accel = reshape_vector(accel_signal[sensor], 40, 3)
-        combined_signals[location] = np.concatenate((reshaped_gyro, reshaped_accel), axis=2) #Concatenates to gyro x,y,z and accel x,y,z
-    return combined_signals
-
 
 XsensGaitParser =  excel_reader_GN.XsensGaitDataParser()
 storage_client = storage.Client()
@@ -128,10 +130,13 @@ partitioned_awinda_control['hip_angle'] = [reshape_vector(aggregate_control_data
 partitioned_awinda_control['knee_angle'] = [reshape_vector(aggregate_control_data['knee_angle'][0], new_size = 51), reshape_vector(aggregate_control_data['knee_angle'][1], new_size = 51)]
 partitioned_awinda_control['ankle_angle'] = [reshape_vector(aggregate_control_data['ankle_angle'][0], new_size = 51), reshape_vector(aggregate_control_data['ankle_angle'][1], new_size = 51)]
 
-script_dir = os.path.dirname(__file__)
+script_dir = r"Q:\main_propellab\Users\Ng, Gabe\Summer Student 2024\Manuscript\Updated Results"
 current_datetime = datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
-csv_filename = f"logresults_{run_time}.csv" #Builds a log file based on the current time to keep track of runs
+run_time = datetime.datetime.now().strftime("%d-%m-%y_%H-%M")
+csv_filename = f"GPS_Eval_logresults_{run_time}.csv" #Builds a log file based on the current time to keep track of runs
 csv_path = os.path.join(script_dir, csv_filename)
+log_file = fr"Q:\main_propellab\Users\Ng, Gabe\Summer Student 2024\Manuscript\Updated Results\logresults_{run_time}.txt"
+logging.basicConfig(filename=log_file, level=logging.INFO, format='%(asctime)s - %(message)s')
 
 def calculate_state_correspondence_matrix(hmm_1, hmm_2, n_states):
     def calculate_stationary_distribution(hmm):
@@ -197,45 +202,29 @@ def calculate_gini_index(q_matrix, n_states):
     gini_index = 0.5 * (r + c)
     return gini_index
 
-# Function to add a row of data to the CSV file
-def add_row_to_csv(csv_path, sensor_config, gait_param, algorithm, participant_num, level, parameter):
-    with open(csv_path, mode='a', newline='') as file:
-        writer = csv.writer(file)
-        writer.writerow([csv_path, sensor_config, gait_param, algorithm, participant_num, level, parameter])
-
-def reshape_vector(vectors_orig, new_size, num_axes=3):
-    x_new = np.linspace(0, 100, new_size)
-    trial_reshaped = []
-    for stride in vectors_orig:
-        x_orig = np.linspace(0, 100, len(stride))
-        func_cubic = [interp.interp1d(x_orig, stride[:, i], kind='cubic') for i in range(num_axes)]
-        vec_cubic = np.array([func_cubic[i](x_new) for i in range(num_axes)]).transpose()
-        trial_reshaped.append(vec_cubic)
-    return np.array(trial_reshaped)
-
+"""Functions for reshaping/assembling raw sensor data together - option to normalize the data (mean centered)"""
 def normalize_signal(signal):
-    """
-    Normalizes the signal to have a variance of 1 along the second axis.
-    """
     mean = np.mean(signal, axis=1, keepdims=True)
-    variance = np.var(signal, axis=1, keepdims=True)
-    normalized_signal = (signal - mean) / np.sqrt(variance)
+    std_dev = np.std(signal, axis=1, ddof=1, keepdims=True)
+    normalized_signal = (signal - mean) / std_dev
     return normalized_signal
 
 #uses dictionaries to extract the relevant raw sensor data, reshapes the data, then concatenates gyro and accelerometer signals together 
-def organize_signals(sensor_mappings, gyro_signal, accel_signal):
+def organize_signals(sensor_mappings, gyro_signal, accel_signal,normalize=True): #Default = Normalization on
     combined_signals = {}
     for location, sensor in sensor_mappings.items():
         reshaped_gyro = reshape_vector(gyro_signal[sensor], 40, 3)
         reshaped_accel = reshape_vector(accel_signal[sensor], 40, 3)
         
-        normalized_gyro = normalize_signal(reshaped_gyro)
-        normalized_accel = normalize_signal(reshaped_accel)
-        
-        # Concatenate the normalized gyro and accel signals
-        combined_signals[location] = np.concatenate((normalized_gyro, normalized_accel), axis=2)
-        # #combined_signals[location] = reshaped_gyro
-        #combined_signals[location] = np.concatenate((reshaped_gyro, reshaped_accel), axis=2) #Concatenates to gyro x,y,z and accel x,y,z
+        """ NORMALIZATION ADDED HERE"""
+        if normalize:
+            normalized_gyro = normalize_signal(reshaped_gyro) #Normalizing the reshaped signals
+            normalized_accel = normalize_signal(reshaped_accel) #Normalizing the reshaped signals
+            combined_signals[location] = np.concatenate((normalized_gyro, normalized_accel), axis=-1) #Concatenates to gyro x,y,z and accel x,y,z
+            #logging.info(f"Normalization applied to signals for location {location}.")
+        else:
+            combined_signals[location] = np.concatenate((reshaped_gyro, reshaped_accel), axis=-1) #Concatenates to gyro x,y,z and accel x,y,z   
+    
     return combined_signals
 
 """ Data grouping/splitting pipeline:"""
@@ -251,7 +240,7 @@ def finding_groupings(num_groups, gait_parameter, gait_cycles, percent_grading, 
     if reverse:
         percent_grading = -percent_grading
         values_sorted = sorted(gait_parameter, reverse=True)
-        sorted_indices = np.argsort(gait_parameter)[::-1]  # Sort indices in descending order of stance time symmetry
+        sorted_indices = np.argsort(gait_parameter)[::-1]  # Sort indices in descending order of stance time symmetry/other sorting parameter
     else:
         sorted_indices = np.argsort(gait_parameter)
         values_sorted = sorted(gait_parameter, reverse=False)
@@ -261,8 +250,9 @@ def finding_groupings(num_groups, gait_parameter, gait_cycles, percent_grading, 
     target_means = [np.mean(values_sorted[:group_sizes[0]])]
 
     # Initializes the groups and the remaining values to be picked from
+    grouped_gait_cycles = {}
     groups = [[] for _ in range(num_groups)]
-    grouped_gait_cycles = [[] for _ in range(num_groups)]
+    grouped_gait_cycles = {key: [[] for _ in range(num_groups)] for key in gait_cycles}
     remaining_indices = sorted_indices[:]
 
     for i in range(1, num_groups):
@@ -273,7 +263,10 @@ def finding_groupings(num_groups, gait_parameter, gait_cycles, percent_grading, 
         filtered_indices = [idx for idx in remaining_indices if abs(gait_parameter[idx] - target_mean) < percent_grading / 2]
         selected_indices = filtered_indices[:]
         groups[i].extend(gait_parameter[idx] for idx in selected_indices)
-        grouped_gait_cycles[i].extend(gait_cycles[idx] for idx in selected_indices)
+        
+        for key in gait_cycles: #Appends the correct gait cycles to the new list
+            grouped_gait_cycles[key][i].extend(gait_cycles[key][idx] for idx in selected_indices)
+        
         remaining_indices = [idx for idx in remaining_indices if idx not in selected_indices]
 
     return groups, grouped_gait_cycles, percent_grading            
@@ -288,7 +281,7 @@ def finding_groupings(num_groups, gait_parameter, gait_cycles, percent_grading, 
 """
 
 def random_sampling(groups, grouped_gait_cycles, sample_size=50):
-    def adaptive_subsample(group, first_mean, i, percent_grading=0.4, tolerance=0.05, sample_size=50, max_iterations=10000):
+    def adaptive_subsample(group, first_mean, i, percent_grading=0.03, tolerance=0.005, sample_size=50, max_iterations=10000):
         available_indices = list(range(len(group)))  # Make a list that spans all the indices
         sample_indices = np.random.choice(available_indices, size=sample_size, replace=False)
         
@@ -366,27 +359,29 @@ def random_sampling(groups, grouped_gait_cycles, sample_size=50):
     baseline_2_indices = sample_indices_first_group[50:]
     
     subsampled_values_baseline1 = [groups[0][j] for j in baseline_1_indices]
-    subsampled_gait_cycles_baseline1 = [grouped_gait_cycles[0][j] for j in baseline_1_indices]
+    subsampled_gait_cycles_baseline1 = {key: [grouped_gait_cycles[key][0][j] for j in baseline_1_indices] for key in grouped_gait_cycles}
     
     subsampled_values_baseline2 = [groups[0][j] for j in baseline_2_indices]
-    subsampled_gait_cycles_baseline2 = [grouped_gait_cycles[0][j] for j in baseline_2_indices]
+    subsampled_gait_cycles_baseline2 = {key: [grouped_gait_cycles[key][0][j] for j in baseline_2_indices] for key in grouped_gait_cycles}
     
     groups_subsampled_list = []
-    gaitcycles_subsampled_list = []
+    gaitcycles_subsampled_list = {key: [] for key in grouped_gait_cycles}
     
     groups_subsampled_list.append(subsampled_values_baseline1)
     groups_subsampled_list.append(subsampled_values_baseline2)
     
-    gaitcycles_subsampled_list.append(subsampled_gait_cycles_baseline1)
-    gaitcycles_subsampled_list.append(subsampled_gait_cycles_baseline2)
+    for key in grouped_gait_cycles:
+        gaitcycles_subsampled_list[key].append(subsampled_gait_cycles_baseline1[key])
+        gaitcycles_subsampled_list[key].append(subsampled_gait_cycles_baseline2[key])
     
     #Only consider 3 groups here
     for i in range(1, 3):
         sample_indices = adaptive_subsample(np.array(groups[i]), group1_mean, i)
         subsampled_values = [groups[i][j] for j in sample_indices]
-        subsampled_gait_cycles = [grouped_gait_cycles[i][j] for j in sample_indices]
+        subsampled_gait_cycles = {key: [grouped_gait_cycles[key][i][j] for j in sample_indices] for key in grouped_gait_cycles}
         groups_subsampled_list.append(subsampled_values)
-        gaitcycles_subsampled_list.append(subsampled_gait_cycles)
+        for key in grouped_gait_cycles:
+            gaitcycles_subsampled_list[key].append(subsampled_gait_cycles[key])
     
     return groups_subsampled_list, gaitcycles_subsampled_list
 
@@ -397,23 +392,25 @@ def check_group_configurations(gait_split_parameter, raw_sensor_data, num_groups
     groups, grouped_gait_cycles, grading = finding_groupings(num_groups, gait_split_parameter, raw_sensor_data, percent_grading, reverse=False)
     
     filtered_groups = []
-    filtered_gait_groups = []
+    filtered_gait_groups = {key: [] for key in grouped_gait_cycles}  # Initialize the dictionary for filtered gait groups
     
     for i in range(len(groups)):
         if len(groups[i]) >= 70:
             filtered_groups.append(groups[i])
-            filtered_gait_groups.append(grouped_gait_cycles[i])
+            for key in grouped_gait_cycles:
+                filtered_gait_groups[key].append(grouped_gait_cycles[key][i])
     
     if len(filtered_groups) < 3:
         print("Trying the reverse")
         groups, grouped_gait_cycles, grading = finding_groupings(num_groups, gait_split_parameter, raw_sensor_data, percent_grading, reverse=True)  # Try the other direction if requirements are not fulfilled
         filtered_groups = []
-        filtered_gait_groups = []
+        filtered_gait_groups = {key: [] for key in grouped_gait_cycles} 
         
         for i in range(len(groups)):
             if len(groups[i]) >= 70:
                 filtered_groups.append(groups[i])
-                filtered_gait_groups.append(grouped_gait_cycles[i])
+                for key in grouped_gait_cycles:
+                    filtered_gait_groups[key].append(grouped_gait_cycles[key][i])
 
         if len(filtered_groups) < 3:
             raise ValueError("Insufficient group sizes available for this participant")
@@ -447,7 +444,7 @@ prefix_from_bucket = 'Wearable Biofeedback System (REB-0448)/Data/Raw Data/'
 #participant_list = ['LLPU_P09','LLPU_P10','LLPU_P12','LLPU_P15']
 participant_list = ['LLPU_P01','LLPU_P02','LLPU_P03','LLPU_P04','LLPU_P05','LLPU_P06','LLPU_P08','LLPU_P09','LLPU_P10','LLPU_P12','LLPU_P15']
 #participant_list = ['LLPU_P08','LLPU_P09','LLPU_P10','LLPU_P12','LLPU_P15']
-arrangements = ['pelvis','upper','lower']
+
 
 STSR_full = []
 StepLength_full = []
@@ -482,12 +479,10 @@ for participant in participant_list:
     
     if side == 1:
         prosth_side = 0 #Right side
-        non_prosth_side = 1
         side_label = "Right"
         print("Prosthetic on the right side")
     else:
         prosth_side = 1 #Left side
-        non_prosth_side = 0
         side_label = "Left"
         print("Prosthetic side on the left side")
     
@@ -500,19 +495,10 @@ for participant in participant_list:
     part_strides = {}
     part_gait_params = {}
     part_kinematic_params = {}
-    part_raw_sensor = []
+    part_sensor_data = {}
     trial_type = 'LLPU'
     height_normalized = True
-    
-    part_strides_baseline = {}
-    part_gait_params_baseline = {}
-    part_kinematic_params_baseline = {}
-    part_sensor_data_baseline = []
-    
-    knee_roms_list = []
-    hip_roms_list = []
-    step_lengths_list = []
-    ankle_roms_list = []
+
    
     logging.info(f"Processing participant {participant}")
     if blobs:
@@ -522,13 +508,12 @@ for participant in participant_list:
                     XsensGaitParser.process_mvn_trial_data(f"gs://{bucket_name}/{blob.name}")
                     partitioned_mvn_data = XsensGaitParser.get_partitioned_mvn_data()
                     gait_params = XsensGaitParser.get_gait_param_info()
-                    combined_signals = organize_signals(sensor_mappings, partitioned_mvn_data['gyro_data'], partitioned_mvn_data['acc_data'])
+                    normalize = True
+                    combined_signals = organize_signals(sensor_mappings, partitioned_mvn_data['gyro_data'], partitioned_mvn_data['acc_data'],normalize=normalize)
                     pelvis_data = combined_signals['pelvis']
                     upper_data = np.concatenate((combined_signals['UpperR'], combined_signals['UpperL']), axis=2)  # Concatenate by last axis
                     lower_data = np.concatenate((combined_signals['LowerR'], combined_signals['LowerL']), axis=2)  # Concatenate by last axis
-                    full_sensors = np.concatenate((pelvis_data,upper_data,lower_data),axis=2)
-                    part_raw_sensor.append(full_sensors)
-
+                    
                     if trial_type in part_strides:
                         for body_part in part_strides[trial_type]:
                             for i, side in enumerate(part_strides[trial_type][body_part]):
@@ -536,7 +521,11 @@ for participant in participant_list:
                                 part_strides[trial_type][body_part][i] = part_strides[trial_type][body_part][i] + partitioned_mvn_data[body_part][i]
                                
                         part_gait_params[trial_type].append(gait_params['spatio_temp'])
-                        
+                        part_sensor_data['pelvis'] = np.append(part_sensor_data['pelvis'], pelvis_data,axis=0)
+                        part_sensor_data['Upper'] = np.append(part_sensor_data['Upper'], upper_data,axis=0)
+                        part_sensor_data['Lower'] = np.append(part_sensor_data['Lower'], lower_data,axis=0)
+                    
+
                         for joint in part_kinematic_params[trial_type]:
                             for i, side in enumerate(part_kinematic_params[trial_type][joint]):
                                 part_kinematic_params[trial_type][joint][i] = np.append(part_kinematic_params[trial_type][joint][i], gait_params['kinematics'][joint][i], axis=0) 
@@ -545,6 +534,10 @@ for participant in participant_list:
                         part_strides[trial_type] = partitioned_mvn_data
                         part_gait_params[trial_type] = [gait_params['spatio_temp']]
                         part_kinematic_params[trial_type] = gait_params['kinematics']
+                        part_sensor_data['pelvis'] = pelvis_data
+                        part_sensor_data['Upper'] =  upper_data
+                        part_sensor_data['Lower'] = lower_data
+                    
                     file_name = os.path.basename(blob.name)
 
                 except IndexError as e: #Exception based on an Index Error encountered in excel_reader_gcp.py **
@@ -558,11 +551,6 @@ for participant in participant_list:
         else:
             stance_time_symmetry = [item for sublist in [i[11] for i in part_gait_params[trial_type]] for item in sublist]
         
-        knee_ROM = [item for sublist in knee_roms_list for item in sublist]
-        step_lengths = [item for sublist in step_lengths_list for item in sublist]
-        hip_ROM = [item for sublist in hip_roms_list for item in sublist] 
-        ankle_ROM = [item for sublist in ankle_roms_list for item in sublist] 
-    
         partitioned_awinda_gait = {}
         partitioned_awinda_gait['pelvis_orient'] = reshape_vector(part_strides[trial_type]['pelvis_orient'][0], new_size = 51)
         partitioned_awinda_gait['hip_angle'] = [reshape_vector(part_strides[trial_type]['hip_angle'][0], new_size = 51), reshape_vector(part_strides[trial_type]['hip_angle'][1], new_size = 51)]
@@ -591,53 +579,18 @@ for participant in participant_list:
 
         GPS_full.append(gait_scores_list)
         
-        
-        flattened_raw_sensor = []
-        for sublist in part_raw_sensor:
-            for item in sublist:
-                flattened_raw_sensor.append(item) #Flatten to individual gait cycles 
-                
-        ordered_groups, ordered_gaitcycles = check_group_configurations(gait_scores_list, flattened_raw_sensor,3)
-        # if participant == 'LLPU_P08':
-        #     ordered_groups, ordered_gaitcycles = check_group_configurations(stance_time_symmetry, flattened_raw_sensor,13)
-        # else:
-        #     ordered_groups, ordered_gaitcycles = check_group_configurations(stance_time_symmetry, flattened_raw_sensor,4)
+        print(np.shape(part_sensor_data['pelvis']))
+        if participant == 'LLPU_P08':
+            ordered_groups, ordered_gaitcycles = check_group_configurations(stance_time_symmetry, part_sensor_data,13)
+        else:
+            ordered_groups, ordered_gaitcycles = check_group_configurations(stance_time_symmetry, part_sensor_data,4)
+        # ordered_groups, ordered_gaitcycles = check_group_configurations(gait_scores_list, part_sensor_data,3)
+        logging.info("GPS Trial")
         ordered_group_means = [round(np.mean(group), 3) for group in ordered_groups]
         ordered_group_min = [round(min(group), 3) for group in ordered_groups]
         ordered_group_max = [round(max(group), 3) for group in ordered_groups]
         group_lengths = [len(group) for group in ordered_groups]
-        
-                # print('Mean Speed: %.3f ± %.3f' % (np.mean(speed), np.std(speed)))
-                # print('Mean Cadence: %.3f ± %.3f' % (np.mean(cadence), np.std(cadence)))
-        # Group labels
-        group_labels = ["Baseline 1", "Baseline 2", "Group 1", "Group 2"]
 
-        # Create a dictionary to structure the data
-        data = {
-            "Group": group_labels,
-            "Mean": ordered_group_means,
-            "Min": ordered_group_min,
-            "Max": ordered_group_max
-        }
-
-        # Create a DataFrame
-        df = pd.DataFrame(data)
-        df['Participant'] = participant
-
-        # Save or append the DataFrame to a CSV file
-        csv_filename = "C:\\Users\\ekuep\Desktop\\results_groupinfo_STSR_trial2.csv"
-
-        if os.path.isfile(csv_filename):
-            # If the file exists, append without writing the header
-            df.to_csv(csv_filename, mode='a', header=False, index=False)
-        else:
-            # If the file does not exist, write the header
-            df.to_csv(csv_filename, mode='w', header=True, index=False)
-
-        print(f"Results saved to {csv_filename}")
-    
-        print(group_lengths)
-        print(ordered_group_means)
 
         for k, group in enumerate(ordered_groups):
             print(f"Group {k+1}: {len(group)} (Mean: {np.mean(group) if group else 'N/A'})")
@@ -645,32 +598,9 @@ for participant in participant_list:
         """Splitting of the raw sensor data was done with all of the sensors concatenated along the last axis (i.e. each gait cycle with 40 points would be a 40x30 array (6 axis pelvis + 12 axis upper + 12 axis lower))"""
         """This is used to split them out into their respective sensor configurations (pelvis, upper, lower)"""
         
-        # Split each array and append to respective lists
-        gaitcycles_40x6 = [] #pelvis
-        gaitcycles_40x12_1 = [] #upper
-        gaitcycles_40x12_2 = [] #lower
-
-        # Iterate over each sublist in gaitcycles
-        for sublist in ordered_gaitcycles:
-            sublist_40x6 = []
-            sublist_40x12_1 = []
-            sublist_40x12_2 = []
-            
-            # Split each array in the sublist
-            for array in sublist:
-                split_arrays = np.split(array, [6, 18], axis=1)  # Split the array into 40x6, 40x12, 40x12 parts
-                sublist_40x6.append(split_arrays[0]) #Filter individual gait cycles and split them (first 6, next 12, next 12)
-                sublist_40x12_1.append(split_arrays[1])
-                sublist_40x12_2.append(split_arrays[2])
-            
-            # Append the split sublists to the main lists
-            gaitcycles_40x6.append(sublist_40x6)
-            gaitcycles_40x12_1.append(sublist_40x12_1)
-            gaitcycles_40x12_2.append(sublist_40x12_2)
-
         # Pelvis, upper, lower
-        combined_sensor_configs = [gaitcycles_40x6, gaitcycles_40x12_1, gaitcycles_40x12_2]            
-        
+        combined_sensor_configs = [ordered_gaitcycles['pelvis'], ordered_gaitcycles['Upper'], ordered_gaitcycles['Lower']]   
+        arrangements = ['pelvis','upper','lower']  
         for sensor_idx, raw_sensor in enumerate(combined_sensor_configs): #Iterates through each sensor configuration (pelvis, upper, lower)
             
             # """ DTW Implementation"""
@@ -698,7 +628,7 @@ for participant in participant_list:
             MDP_mean_deviations = []
             trained_SOM = train_minisom(train_data, learning_rate=0.1, topology='hexagonal', normalize=True) # type: ignore
            
-            for j in range(1, len(ordered_gaitcycles)):
+            for j in range(1, len(raw_sensor)):
                 #Shuffle and split the list (only looking at the test data here)
                 random.shuffle(raw_sensor[j])
                 test_data = np.concatenate(raw_sensor[j],axis=0)
