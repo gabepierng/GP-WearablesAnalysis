@@ -18,35 +18,82 @@ Inputs:
     both part_kinmatics and control_kinematics should be reshaped to be 2% increments of the gait cycle. This leads to 51
     data points (eg. HS to subsequent HS)
 '''
+# def calc_gait_profile_score(part_kinematics, control_kinematics):
+#     # organize kinematics into single array
+    
+#     def create_kin_profile(kinematics_dict):
+#         kinematics_arr = []
+#         kinematics_arr.append(np.mean(kinematics_dict['pelvis_orient'], axis=0).transpose())  # pelvis orientation (x, y, z)
+#         kinematics_arr.append(np.mean(kinematics_dict['hip_angle'][0], axis = 0).transpose()) # hip abduction/adduction, rotation, flexion
+#         kinematics_arr.append(np.mean(kinematics_dict['hip_angle'][1], axis = 0).transpose())
+#         kinematics_arr.append(np.expand_dims(np.mean(np.array(kinematics_dict['knee_angle'])[0][:,:,2], axis = 0), axis=0))  # knee flexion
+#         kinematics_arr.append(np.expand_dims(np.mean(np.array(kinematics_dict['knee_angle'])[1][:,:,2], axis = 0), axis=0))
+#         kinematics_arr.append(np.expand_dims(np.mean(np.array(kinematics_dict['ankle_angle'])[0][:,:,2], axis = 0), axis=0)) # ankle flexion
+#         kinematics_arr.append(np.expand_dims(np.mean(np.array(kinematics_dict['ankle_angle'])[1][:,:,2], axis = 0), axis=0))
+#         kinematics_arr.append(np.expand_dims(np.mean(np.array(kinematics_dict['ankle_angle'])[0][:,:,1], axis = 0), axis=0)) # foot progression (ankle rotation)
+#         kinematics_arr.append(np.expand_dims(np.mean(np.array(kinematics_dict['ankle_angle'])[1][:,:,1], axis = 0), axis=0))
+        
+#         kinematics_arr = np.concatenate(kinematics_arr, axis=0)
+#         return kinematics_arr
+    
+#     # mean kinematics arrays. Should be shape [Number of signals, 51 time points]
+#     part_mean_kinematics = create_kin_profile(part_kinematics)
+#     control_mean_kinematics = create_kin_profile(control_kinematics)
+    
+    
+#     gait_variability_score = [np.linalg.norm(part_mean_kinematics[i] - control_mean_kinematics[i]) / np.sqrt(len(part_mean_kinematics[i]))
+#                                  for i in range(len(part_mean_kinematics))]
+    
+#     gait_profile_score = np.linalg.norm(gait_variability_score) / np.sqrt(len(gait_variability_score))
+    
+#     return gait_profile_score
+
+
 def calc_gait_profile_score(part_kinematics, control_kinematics):
-    # organize kinematics into single array
+    # organize kinematics into a single array
     
     def create_kin_profile(kinematics_dict):
-        kinematics_arr = []
-        kinematics_arr.append(np.mean(kinematics_dict['pelvis_orient'], axis=0).transpose())  # pelvis orientation (x, y, z)
-        kinematics_arr.append(np.mean(kinematics_dict['hip_angle'][0], axis = 0).transpose()) # hip abduction/adduction, rotation, flexion
-        kinematics_arr.append(np.mean(kinematics_dict['hip_angle'][1], axis = 0).transpose())
-        kinematics_arr.append(np.expand_dims(np.mean(np.array(kinematics_dict['knee_angle'])[0][:,:,2], axis = 0), axis=0))  # knee flexion
-        kinematics_arr.append(np.expand_dims(np.mean(np.array(kinematics_dict['knee_angle'])[1][:,:,2], axis = 0), axis=0))
-        kinematics_arr.append(np.expand_dims(np.mean(np.array(kinematics_dict['ankle_angle'])[0][:,:,2], axis = 0), axis=0)) # ankle flexion
-        kinematics_arr.append(np.expand_dims(np.mean(np.array(kinematics_dict['ankle_angle'])[1][:,:,2], axis = 0), axis=0))
-        kinematics_arr.append(np.expand_dims(np.mean(np.array(kinematics_dict['ankle_angle'])[0][:,:,1], axis = 0), axis=0)) # foot progression (ankle rotation)
-        kinematics_arr.append(np.expand_dims(np.mean(np.array(kinematics_dict['ankle_angle'])[1][:,:,1], axis = 0), axis=0))
+        kinematics_arr = {}
         
-        kinematics_arr = np.concatenate(kinematics_arr, axis=0)
+        kinematics_arr['pelvic_tilt'] = np.mean(kinematics_dict['pelvis_orient'][:, :, 0], axis=0).transpose()  # pelvic tilt
+        kinematics_arr['pelvic_obliquity'] = np.mean(kinematics_dict['pelvis_orient'][:, :, 1], axis=0).transpose()  # pelvic obliquity
+        kinematics_arr['pelvic_rotation'] = np.mean(kinematics_dict['pelvis_orient'][:, :, 2], axis=0).transpose()  # pelvic rotation
+        
+        kinematics_arr['hip_flexion_L'] = np.mean(kinematics_dict['hip_angle'][1][:, :, 0], axis=0).transpose()  # left hip flexion/extension
+        kinematics_arr['hip_abduction_L'] = np.mean(kinematics_dict['hip_angle'][1][:, :, 1], axis=0).transpose()  # left hip abduction/adduction
+        kinematics_arr['hip_rotation_L'] = np.mean(kinematics_dict['hip_angle'][1][:, :, 2], axis=0).transpose()  # left hip internal/external rotation
+        
+        kinematics_arr['hip_flexion_R'] = np.mean(kinematics_dict['hip_angle'][0][:, :, 0], axis=0).transpose()  # right hip flexion/extension
+        kinematics_arr['hip_abduction_R'] = np.mean(kinematics_dict['hip_angle'][0][:, :, 1], axis=0).transpose()  # right hip abduction/adduction
+        kinematics_arr['hip_rotation_R'] = np.mean(kinematics_dict['hip_angle'][0][:, :, 2], axis=0).transpose()  # right hip internal/external rotation
+        
+        kinematics_arr['knee_flexion_R'] = np.mean(kinematics_dict['knee_angle'][0][:, :, 2], axis=0).transpose()  # left knee flexion/extension
+        kinematics_arr['knee_flexion_L'] = np.mean(kinematics_dict['knee_angle'][1][:, :, 2], axis=0).transpose()  # right knee flexion/extension
+        
+        kinematics_arr['ankle_flexion_R'] = np.mean(kinematics_dict['ankle_angle'][0][:, :, 2], axis=0).transpose()  # left ankle dorsiflexion/plantarflexion
+        kinematics_arr['ankle_flexion_L'] = np.mean(kinematics_dict['ankle_angle'][1][:, :, 2], axis=0).transpose()  # right ankle dorsiflexion/plantarflexion
+        
+        kinematics_arr['foot_progression_R'] = np.mean(kinematics_dict['ankle_angle'][0][:, :, 1], axis=0).transpose()  # left foot progression
+        kinematics_arr['foot_progression_L'] = np.mean(kinematics_dict['ankle_angle'][1][:, :, 1], axis=0).transpose()  # right foot progression
+        
         return kinematics_arr
     
-    # mean kinematics arrays. Should be shape [Number of signals, 51 time points]
+    # Create mean kinematics arrays. Should be shape [Number of signals, 51 time points]
     part_mean_kinematics = create_kin_profile(part_kinematics)
     control_mean_kinematics = create_kin_profile(control_kinematics)
     
+    # Calculate Gait Variable Scores (GVS) and store in a dictionary
+    gait_variability_scores = {}
+    for signal in part_mean_kinematics.keys():
+        gait_variability_scores[signal] = np.linalg.norm(part_mean_kinematics[signal] - control_mean_kinematics[signal]) / np.sqrt(len(part_mean_kinematics[signal]))
     
-    gait_variability_score = [np.linalg.norm(part_mean_kinematics[i] - control_mean_kinematics[i]) / np.sqrt(len(part_mean_kinematics[i]))
-                                 for i in range(len(part_mean_kinematics))]
-    
-    gait_profile_score = np.linalg.norm(gait_variability_score) / np.sqrt(len(gait_variability_score))
-    
-    return gait_profile_score
+    # Calculate Gait Profile Score (GPS)
+    gait_profile_score = np.linalg.norm(list(gait_variability_scores.values())) / np.sqrt(len(gait_variability_scores))
+    #print(type(gait_profile_score), type(gait_variability_scores))
+    return gait_profile_score, gait_variability_scores
+
+
+
 """ 
 TSLEARN DTW - documentation: https://tslearn.readthedocs.io/en/stable/gen_modules/metrics/tslearn.metrics.dtw_path.html#tslearn.metrics.dtw_path
     Parameters: 
