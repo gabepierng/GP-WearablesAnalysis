@@ -380,70 +380,69 @@ for participant in participant_list:
 
         for signal_val in individual_signals:
             gaitprofilescore, gaitvariabilityscore = calc_gait_profile_score(signal_val, partitioned_awinda_control)
-            gait_scores_list.append(gaitvariabilityscore)
+            gait_scores_list[trial_type].append(gaitprofilescore)
         
     sensorlist = ['pelvis']
     for sensor_loc in sensorlist:
         print(sensor_loc)
         
-        (Pre_PT1, Pre_PT2, Post_PT), (Pre_PT1_GVS, Pre_PT2_GVS, Post_PT_GVS) =split_and_match_lists(part_sensor_data['Pre'][sensor_loc], part_sensor_data['Post'][sensor_loc],gait_scores_list['Pre'], gait_scores_list['Post'],max_size=50)
+        (Pre_PT1, Pre_PT2, Post_PT), (Pre_PT1_GPS, Pre_PT2_GPS, Post_PT_GPS) =split_and_match_lists(part_sensor_data['Pre'][sensor_loc], part_sensor_data['Post'][sensor_loc],gait_scores_list['Pre'], gait_scores_list['Post'],max_size=50)
 
-        print(np.mean(Pre_PT1_GVS))
+        
         pre_gvs_dict = {}
         post_gvs_dict = {}
 
         # Define the participant ID
         participant_id = participant  # Change this to your actual participant ID
 
+        # for gait_variability_scores in Pre_PT2_GVS:
+        #     for signal, scores in gait_variability_scores.items():
+        #         if signal not in pre_gvs_dict:
+        #             pre_gvs_dict[signal] = []
+        #         # Ensure scores is iterable (e.g., convert single values to a list)
+        #         if isinstance(scores, (list, np.ndarray)):
+        #             pre_gvs_dict[signal].extend(scores)
+        #         else:
+        #             pre_gvs_dict[signal].append(scores)
+        #     # Add participant column
+        #     participant_list = [participant_id] * len(Pre_PT2_GVS)
+        #     pre_gvs_dict.setdefault('Participant', participant_list.copy())
 
-        for gait_variability_scores in Pre_PT2_GVS:
-            for signal, scores in gait_variability_scores.items():
-                if signal not in pre_gvs_dict:
-                    pre_gvs_dict[signal] = []
-                # Ensure scores is iterable (e.g., convert single values to a list)
-                if isinstance(scores, (list, np.ndarray)):
-                    pre_gvs_dict[signal].extend(scores)
-                else:
-                    pre_gvs_dict[signal].append(scores)
-            # Add participant column
-            participant_list = [participant_id] * len(Pre_PT2_GVS)
-            pre_gvs_dict.setdefault('Participant', participant_list.copy())
+        # for gait_variability_scores in Post_PT_GVS:
+        #     for signal, scores in gait_variability_scores.items():
+        #         if signal not in post_gvs_dict:
+        #             post_gvs_dict[signal] = []
+        #         # Ensure scores is iterable (e.g., convert single values to a list)
+        #         if isinstance(scores, (list, np.ndarray)):
+        #             post_gvs_dict[signal].extend(scores)
+        #         else:
+        #             post_gvs_dict[signal].append(scores)
+        #     # Add participant column
+        #     post_gvs_dict.setdefault('Participant', participant_list.copy())
 
-        for gait_variability_scores in Post_PT_GVS:
-            for signal, scores in gait_variability_scores.items():
-                if signal not in post_gvs_dict:
-                    post_gvs_dict[signal] = []
-                # Ensure scores is iterable (e.g., convert single values to a list)
-                if isinstance(scores, (list, np.ndarray)):
-                    post_gvs_dict[signal].extend(scores)
-                else:
-                    post_gvs_dict[signal].append(scores)
-            # Add participant column
-            post_gvs_dict.setdefault('Participant', participant_list.copy())
+        # # Convert dictionaries to DataFrames
+        # pre_gvs_df = pd.DataFrame(pre_gvs_dict)
+        # post_gvs_df = pd.DataFrame(post_gvs_dict)
 
-        # Convert dictionaries to DataFrames
-        pre_gvs_df = pd.DataFrame(pre_gvs_dict)
-        post_gvs_df = pd.DataFrame(post_gvs_dict)
+        # # Add a column to distinguish between pre and post conditions
+        # pre_gvs_df['Condition'] = 'Pre'
+        # post_gvs_df['Condition'] = 'Post'
 
-        # Add a column to distinguish between pre and post conditions
-        pre_gvs_df['Condition'] = 'Pre'
-        post_gvs_df['Condition'] = 'Post'
+        # # Combine Pre and Post DataFrames
+        # combined_gvs_df = pd.concat([pre_gvs_df, post_gvs_df], ignore_index=True)
 
-        # Combine Pre and Post DataFrames
-        combined_gvs_df = pd.concat([pre_gvs_df, post_gvs_df], ignore_index=True)
+        # # Reorder columns to place 'Participant' as the leftmost column
+        # columns_order = ['Participant'] + [col for col in combined_gvs_df.columns if col != 'Participant']
+        # combined_gvs_df = combined_gvs_df[columns_order]
 
-        # Reorder columns to place 'Participant' as the leftmost column
-        columns_order = ['Participant'] + [col for col in combined_gvs_df.columns if col != 'Participant']
-        combined_gvs_df = combined_gvs_df[columns_order]
-
-        file_path = r'Q:\main_propellab\Users\Ng, Gabe\Summer Student 2024\Manuscript\PT_PrePostGVS3.csv'
-        if not os.path.isfile(file_path):
-            combined_gvs_df.to_csv(file_path, index=False, header=True)
-        else:
-            combined_gvs_df.to_csv(file_path, index=False, header=False, mode='a')
+        # file_path = r'Q:\main_propellab\Users\Ng, Gabe\Summer Student 2024\Manuscript\PT_PrePostGVS3.csv'
+        # if not os.path.isfile(file_path):
+        #     combined_gvs_df.to_csv(file_path, index=False, header=True)
+        # else:
+        #     combined_gvs_df.to_csv(file_path, index=False, header=False, mode='a')
             
-        logging.info(f"normalize = {normalize}")
-        logging.info(f"Group size: {len(Pre_PT1)}")
+        # logging.info(f"normalize = {normalize}")
+        # logging.info(f"Group size: {len(Pre_PT1)}")
         
         raw_sensor = [Pre_PT1, Pre_PT2, Post_PT]
         GPS_score = [Pre_PT1_GPS,Pre_PT2_GPS, Post_PT_GPS]
