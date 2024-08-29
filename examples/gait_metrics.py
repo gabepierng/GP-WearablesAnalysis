@@ -214,7 +214,7 @@ def calculate_MDP(data, controldata, som, normalize=True):
         weight_array = restruct*std_devs + means
         weight_restruct = weight_array.reshape(som._weights.shape[0], som._weights.shape[1], som._weights.shape[2])
         som._weights = weight_restruct
-        print("Denormalized!")
+        #print("Denormalized!")
     
     winners = np.array([som.winner(instance) for instance in data])  # Finds the best matching unit (BMU) for all time points in the data
     BMU = som._weights[winners[:, 0], winners[:, 1]]  # Collects the corresponding weight vectors for all BMUs

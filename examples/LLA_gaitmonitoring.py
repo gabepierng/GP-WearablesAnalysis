@@ -22,7 +22,6 @@ import excel_reader_gcp_GN as excel_reader_GN
 import copy
 import re
 
-
 b20, a20 = scipy.signal.butter(N=4, Wn = 0.8, btype = 'lowpass')  # Wn = 0.8 = 40 / Nyquist F = 50Hz
 run_time = datetime.datetime.now().strftime("%d-%m-%y_%H-%M")
 
@@ -31,13 +30,10 @@ def add_row_to_csv(csv_path, sensor_config, gait_param, algorithm, participant_n
     file_exists = os.path.isfile(csv_path)
     with open(csv_path, mode='a', newline='') as file:
         writer = csv.writer(file)
-        # If the file doesn't exist or is empty, write the header first
         if not file_exists or os.path.getsize(csv_path) == 0:
             writer.writerow(header)
-        # Write the row data
         writer.writerow([csv_path, sensor_config, gait_param, algorithm, participant_num, level, parameter])
         
-
 def reshape_vector(vectors_orig, new_size, num_axes=3):
     x_new = np.linspace(0, 100, new_size)
     trial_reshaped = []
@@ -56,7 +52,6 @@ part_kinematic_params = {}
 control_strides = {}
 control_gait_params = {}
 control_kinematic_params = {}
-
 
 bucket_dir = 'gs://gaitbfb_propellab/'
 def compile_gait_data(store_gait_cycles, store_gait_params, store_kin_params, filenames, trial_type_filter, print_filenames=False, look_at_all_files = True, desired_filetypes=None):   
@@ -112,9 +107,7 @@ for i, indiv in enumerate(control_strides.keys()):
         
         for signal_type in control_strides[indiv]:
             for j, side in enumerate(control_strides[indiv][signal_type]):
-                aggregate_control_data[signal_type][j] = [control_strides[indiv][signal_type][j][indices[k]] for k in range(min(strides_per_control, len(indices))) ]
-                    
-                    
+                aggregate_control_data[signal_type][j] = [control_strides[indiv][signal_type][j][indices[k]] for k in range(min(strides_per_control, len(indices))) ]             
     else:
         # randomly sample 10 gait cycles from each able-bodied in control, or all gait cycles if less than 10
         for signal_type in control_strides[indiv]:
@@ -130,14 +123,18 @@ partitioned_awinda_control['hip_angle'] = [reshape_vector(aggregate_control_data
 partitioned_awinda_control['knee_angle'] = [reshape_vector(aggregate_control_data['knee_angle'][0], new_size = 51), reshape_vector(aggregate_control_data['knee_angle'][1], new_size = 51)]
 partitioned_awinda_control['ankle_angle'] = [reshape_vector(aggregate_control_data['ankle_angle'][0], new_size = 51), reshape_vector(aggregate_control_data['ankle_angle'][1], new_size = 51)]
 
-script_dir = r"Q:\main_propellab\Users\Ng, Gabe\Summer Student 2024\Manuscript\Updated Results"
+
+script_dir = os.path.dirname(os.path.abspath(__file__))
+logs_dir = os.path.join(script_dir, 'logs')
+os.makedirs(logs_dir, exist_ok=True)
 current_datetime = datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
 run_time = datetime.datetime.now().strftime("%d-%m-%y_%H-%M")
-csv_filename = f"GPS_Eval_logresults_{run_time}.csv" #Builds a log file based on the current time to keep track of runs
-csv_path = os.path.join(script_dir, csv_filename)
-log_file = fr"Q:\main_propellab\Users\Ng, Gabe\Summer Student 2024\Manuscript\Updated Results\logresults_{run_time}.txt"
+csv_filename = f"Eval_logresults_{run_time}.csv"
+csv_path = os.path.join(logs_dir, csv_filename)
+log_file = os.path.join(logs_dir, f"logresults_{run_time}.txt")
 logging.basicConfig(filename=log_file, level=logging.INFO, format='%(asctime)s - %(message)s')
 
+#Stuff for HMM-SM 
 def calculate_state_correspondence_matrix(hmm_1, hmm_2, n_states):
     def calculate_stationary_distribution(hmm):
         eigenvals, eigenvectors = np.linalg.eig(hmm.model.transmat_.T)
@@ -202,7 +199,7 @@ def calculate_gini_index(q_matrix, n_states):
     gini_index = 0.5 * (r + c)
     return gini_index
 
-"""Functions for reshaping/assembling raw sensor data together - option to normalize the data (mean centered)"""
+"""Functions for reshaping/assembling raw sensor data together - option to normalize the data (standardizes)"""
 def normalize_signal(signal):
     mean = np.mean(signal, axis=1, keepdims=True)
     std_dev = np.std(signal, axis=1, ddof=1, keepdims=True)
@@ -221,24 +218,32 @@ def organize_signals(sensor_mappings, gyro_signal, accel_signal,normalize=True):
             normalized_gyro = normalize_signal(reshaped_gyro) #Normalizing the reshaped signals
             normalized_accel = normalize_signal(reshaped_accel) #Normalizing the reshaped signals
             combined_signals[location] = np.concatenate((normalized_gyro, normalized_accel), axis=-1) #Concatenates to gyro x,y,z and accel x,y,z
-            #logging.info(f"Normalization applied to signals for location {location}.")
+
         else:
-            combined_signals[location] = np.concatenate((reshaped_gyro, reshaped_accel), axis=-1) #Concatenates to gyro x,y,z and accel x,y,z   
+            combined_signals[location] = np.concatenate((reshaped_gyro, reshaped_accel), axis=-1) #Concatenates to gyro x,y,z and accel x,y,z, without normalization 
     
     return combined_signals
 
 """ Data grouping/splitting pipeline:"""
-
 """ Split the data into desired number of groups, and extract the first "target mean" from the first group. Subsequent target means are calculated as X% (percent grading) away from previous groups
     ex. if 3% is selected, means of groups will increment by 3% - the direction of incrementing (up/down) depends on whether reverse is selected 
     Iterate through indices in the gait parameter data (in this case, STSR) and append to a grouping if they are within a threshold from the target mean. 
     Sort both the gait parameter and corresponding gait cycles based on the chosen indices. 
 """
 
-def finding_groupings(num_groups, gait_parameter, gait_cycles, percent_grading, add_param, reverse=True):
+"""
+num_groups (float) - This sets how many groups the code will initially try to split the data by in order to create "target means". This number can be toggled with depending on the data distribution.
+gait_parameter (list) - List of gait parameter values corresponding to the gait cycles (ex. STSR, GPS) - parameter you want to SPLIT BY
+gait_cycles (dict) - Dictionary with the corresponding sensor location key for the raw sensor data. For each sensor location, stores a list of arrays, where each array corresponds to the raw sensor data for a gait cycle (ex. 40x6)
+grading_value (float) - Sets what increment between groups that you want to set.
+add_param (list): Additional parameter that you don't want to split the data by, but can be used to just check and see what the distribution of some other secondary gait parameter.
+
+"""
+
+def finding_groupings(num_groups, gait_parameter, gait_cycles, grading_value, add_param, reverse=True):
     
     if reverse:
-        percent_grading = -percent_grading
+        grading_value = -grading_value
         values_sorted = sorted(gait_parameter, reverse=True)
         sorted_indices = np.argsort(gait_parameter)[::-1]  # Sort indices in descending order of stance time symmetry/other sorting parameter
     else:
@@ -257,11 +262,11 @@ def finding_groupings(num_groups, gait_parameter, gait_cycles, percent_grading, 
     remaining_indices = sorted_indices[:]
 
     for i in range(1, num_groups):
-        target_means.append(target_means[0] + percent_grading * i)
+        target_means.append(target_means[0] + grading_value * i)
 
     for i in range(num_groups):
         target_mean = target_means[i]
-        filtered_indices = [idx for idx in remaining_indices if abs(gait_parameter[idx] - target_mean) < percent_grading / 2]
+        filtered_indices = [idx for idx in remaining_indices if abs(gait_parameter[idx] - target_mean) < grading_value / 2]
         selected_indices = filtered_indices[:]
         groups[i].extend(gait_parameter[idx] for idx in selected_indices)
         add_params[i].extend(add_param[idx] for idx in selected_indices)
@@ -271,7 +276,7 @@ def finding_groupings(num_groups, gait_parameter, gait_cycles, percent_grading, 
         
         remaining_indices = [idx for idx in remaining_indices if idx not in selected_indices]
 
-    return groups, grouped_gait_cycles, percent_grading, add_params            
+    return groups, grouped_gait_cycles, grading_value, add_params            
 
 """ Random Sampling Gait Cycles:"""
 
@@ -282,141 +287,96 @@ def finding_groupings(num_groups, gait_parameter, gait_cycles, percent_grading, 
     Returns the indices of the groups, and these are used to update the new groups in random_sampling.
 """
 
-def random_sampling(groups, grouped_gait_cycles, add_params, sample_size=50):
-    def adaptive_subsample(group, first_mean, i, percent_grading=0.4, tolerance=0.05, sample_size=50, max_iterations=10000):
+def random_sampling(groups, grouped_gait_cycles, add_params, grading_value, tolerance, sample_size=50):
+    
+    def adaptive_subsample(group, first_mean, i, sample_size=50, max_iterations=10000):
         available_indices = list(range(len(group)))  # Make a list that spans all the indices
         sample_indices = np.random.choice(available_indices, size=sample_size, replace=False)
-        
-        for idx in sample_indices:
-            available_indices.remove(idx)  # Remove initial sample values from available values
+        available_indices = [idx for idx in available_indices if idx not in sample_indices]  # Remove initial sample values from available values
+
         for _ in range(max_iterations):
             current_mean = np.mean([group[idx] for idx in sample_indices])
             percent_diff = current_mean - first_mean 
-            target_diff = percent_grading * i
+            target_diff = grading_value * i
 
             if len(available_indices) == 0:
                 raise ValueError("No candidates available to adjust the mean")
-            
+
             if (target_diff - tolerance) <= abs(percent_diff) <= (target_diff + tolerance):
                 return sample_indices
-            
+
             if abs(percent_diff) < (target_diff - tolerance):
-                if percent_diff < 0:
-                    # Choose a new sample from the lower half
-                    lower_idx = [idx for idx in available_indices if group[idx] <= np.percentile(group, 50)]
-                    if lower_idx:
-                        new_idx = np.random.choice(lower_idx)
-                        sample_indices = np.append(sample_indices, new_idx)
-                    else:
-                        new_idx = np.random.choice(available_indices)
-                        sample_indices = np.append(sample_indices, new_idx)
-                    
-                    available_indices.remove(new_idx)
-                    sample_indices = np.delete(sample_indices, np.argmax([group[idx] for idx in sample_indices]))
-                else:
-                    # Choose a new sample from the upper half
-                    higher_idx = [idx for idx in available_indices if group[idx] >= np.percentile(group, 50)]
-                    if higher_idx:
-                        new_idx = np.random.choice(higher_idx)
-                        sample_indices = np.append(sample_indices, new_idx)
-                    else:
-                        new_idx = np.random.choice(available_indices)
-                        sample_indices = np.append(sample_indices, new_idx)
-                    
-                    available_indices.remove(new_idx)
-                    sample_indices = np.delete(sample_indices, np.argmin([group[idx] for idx in sample_indices]))
+                direction = 'lower' if percent_diff < 0 else 'upper'
             else:
-                if percent_diff > 0:
-                    lower_idx = [idx for idx in available_indices if group[idx] <= np.percentile(group, 50)]
-                    if lower_idx:
-                        new_idx = np.random.choice(lower_idx)
-                        sample_indices = np.append(sample_indices, new_idx)
-                    else:
-                        new_idx = np.random.choice(available_indices)
-                        sample_indices = np.append(sample_indices, new_idx)
-                    
-                    available_indices.remove(new_idx)
-                    sample_indices = np.delete(sample_indices, np.argmax([group[idx] for idx in sample_indices]))
-                else:
-                    # Choose a new sample from the upper half
-                    higher_idx = [idx for idx in available_indices if group[idx] >= np.percentile(group, 50)]
-                    if higher_idx:
-                        new_idx = np.random.choice(lower_idx)
-                        sample_indices = np.append(sample_indices, new_idx)
-                    else:
-                        new_idx = np.random.choice(available_indices)
-                        sample_indices = np.append(sample_indices, new_idx)
-                    
-                    available_indices.remove(new_idx)
-                    sample_indices = np.delete(sample_indices, np.argmin([group[idx] for idx in sample_indices]))
+                direction = 'upper' if percent_diff > 0 else 'lower'
 
-        raise ValueError("Could not find suitable subsample within the maximum number of iterations")
+            if direction == 'lower':
+                candidates = [idx for idx in available_indices if group[idx] <= np.percentile(group, 50)]
+            else:
+                candidates = [idx for idx in available_indices if group[idx] >= np.percentile(group, 50)]
 
-    indices_first_group = list(range(len(groups[0])))  
-    sample_indices_first_group = np.random.choice(indices_first_group, size=sample_size*2, replace=False)
-    group1_mean = np.mean([groups[0][idx] for idx in sample_indices_first_group]) # first mean used as the target for all subsequent groups
+            if not candidates:
+                candidates = available_indices
+                
+            new_idx = np.random.choice(candidates)
+            available_indices.remove(new_idx)
+            
+            if direction == 'lower':
+                sample_indices = np.append(sample_indices, new_idx)
+                sample_indices = np.delete(sample_indices, np.argmax([group[idx] for idx in sample_indices]))
+            else:
+                sample_indices = np.append(sample_indices, new_idx)
+                sample_indices = np.delete(sample_indices, np.argmin([group[idx] for idx in sample_indices]))
+                
     
-    random.shuffle(sample_indices_first_group)
-    baseline_1_indices = sample_indices_first_group[:50]
-    baseline_2_indices = sample_indices_first_group[50:]
-    
-    subsampled_values_baseline1 = [groups[0][j] for j in baseline_1_indices]
-    add_params_baseline1 = [[add_params[0][j] for j in baseline_1_indices]]
-    subsampled_gait_cycles_baseline1 = {key: [grouped_gait_cycles[key][0][j] for j in baseline_1_indices] for key in grouped_gait_cycles}
-    
-    subsampled_values_baseline2 = [groups[0][j] for j in baseline_2_indices]
-    add_params_baseline2 = [[add_params[0][j] for j in baseline_2_indices]]
-    subsampled_gait_cycles_baseline2 = {key: [grouped_gait_cycles[key][0][j] for j in baseline_2_indices] for key in grouped_gait_cycles}
-    
-    groups_subsampled_list = []
-    add_params_subsampled_list = []
-    gaitcycles_subsampled_list = {key: [] for key in grouped_gait_cycles}
-    
-    groups_subsampled_list.append(subsampled_values_baseline1)
-    groups_subsampled_list.append(subsampled_values_baseline2)
-    add_params_subsampled_list.append(add_params_baseline1)
-    add_params_subsampled_list.append(add_params_baseline2)
-    
-    for key in grouped_gait_cycles:
-        gaitcycles_subsampled_list[key].append(subsampled_gait_cycles_baseline1[key])
-        gaitcycles_subsampled_list[key].append(subsampled_gait_cycles_baseline2[key])
-    
-    #Only consider 3 groups here
-    for i in range(1, 3):
+    indices_first_group = np.random.choice(range(len(groups[0])), size=sample_size*2, replace=False)
+    random.shuffle(indices_first_group)
+    baseline_1_indices, baseline_2_indices = indices_first_group[:50], indices_first_group[50:]
+
+    subsampled_values = {
+        'baseline1': [groups[0][j] for j in baseline_1_indices],
+        'baseline2': [groups[0][j] for j in baseline_2_indices]
+    }
+
+    add_params_subsampled = {
+        'baseline1': [add_params[0][j] for j in baseline_1_indices],
+        'baseline2': [add_params[0][j] for j in baseline_2_indices]
+    }
+
+    gaitcycles_subsampled = {
+        key: {
+            'baseline1': [grouped_gait_cycles[key][0][j] for j in baseline_1_indices],
+            'baseline2': [grouped_gait_cycles[key][0][j] for j in baseline_2_indices]
+        }
+        for key in grouped_gait_cycles
+    }
+
+    groups_subsampled_list = [subsampled_values['baseline1'], subsampled_values['baseline2']]
+    add_params_subsampled_list = [add_params_subsampled['baseline1'], add_params_subsampled['baseline2']]
+    gaitcycles_subsampled_list = {key: [gaitcycles_subsampled[key]['baseline1'], gaitcycles_subsampled[key]['baseline2']] for key in grouped_gait_cycles}
+
+    group1_mean = np.mean(groups_subsampled_list[0])  # first mean used as the target for all subsequent groups
+
+    for i in range(1, 3): #This ensures there are 4 groups (BL, L0, L1, L2)
         sample_indices = adaptive_subsample(np.array(groups[i]), group1_mean, i)
-        subsampled_values = [groups[i][j] for j in sample_indices]
-        subsampled_add_param = [add_params[i][j] for j in sample_indices]
-        subsampled_gait_cycles = {key: [grouped_gait_cycles[key][i][j] for j in sample_indices] for key in grouped_gait_cycles}
-        groups_subsampled_list.append(subsampled_values)
-        add_params_subsampled_list.append(subsampled_add_param)
+        groups_subsampled_list.append([groups[i][j] for j in sample_indices])
+        add_params_subsampled_list.append([add_params[i][j] for j in sample_indices])
+        
         for key in grouped_gait_cycles:
-            gaitcycles_subsampled_list[key].append(subsampled_gait_cycles[key])
+            gaitcycles_subsampled_list[key].append([grouped_gait_cycles[key][i][j] for j in sample_indices])
     
+   
     return groups_subsampled_list, gaitcycles_subsampled_list, add_params_subsampled_list
 
-""" Group splitting and sampling are called. Checks to see which direction the grouping should be done in, and only appends the groups that have at least 70 points"""
+""" Group splitting and sampling are called. Checks to see which direction the grouping should be done in, and only appends the groups that have at least 70 points
+"""
 
-def check_group_configurations(gait_split_parameter, raw_sensor_data, num_groups, add_param):
-    percent_grading = 0.4
-    groups, grouped_gait_cycles, grading, add_params = finding_groupings(num_groups, gait_split_parameter, raw_sensor_data, percent_grading, add_param, reverse=False)
+def check_group_configurations(gait_split_parameter, raw_sensor_data, num_groups, add_param, grading_value, tolerance):
     
-    filtered_groups = []
-    filtered_add_param = []
-    filtered_gait_groups = {key: [] for key in grouped_gait_cycles}  # Initialize the dictionary for filtered gait groups
-    
-    for i in range(len(groups)):
-        if len(groups[i]) >= 70:
-            filtered_groups.append(groups[i])
-            filtered_add_param.append(add_params[i])
-            for key in grouped_gait_cycles:
-                filtered_gait_groups[key].append(grouped_gait_cycles[key][i])
-    
-    if len(filtered_groups) < 3:
-        print("Trying the reverse")
-        groups, grouped_gait_cycles, grading, add_params = finding_groupings(num_groups, gait_split_parameter, raw_sensor_data, percent_grading, add_param, reverse=True)  # Try the other direction if requirements are not fulfilled
+    def filter_groups(groups, grouped_gait_cycles, add_params):
         filtered_groups = []
         filtered_add_param = []
-        filtered_gait_groups = {key: [] for key in grouped_gait_cycles} 
+        filtered_gait_groups = {key: [] for key in grouped_gait_cycles}
         
         for i in range(len(groups)):
             if len(groups[i]) >= 70:
@@ -424,19 +384,40 @@ def check_group_configurations(gait_split_parameter, raw_sensor_data, num_groups
                 filtered_add_param.append(add_params[i])
                 for key in grouped_gait_cycles:
                     filtered_gait_groups[key].append(grouped_gait_cycles[key][i])
+        
+        return filtered_groups, filtered_add_param, filtered_gait_groups
+
+    groups, grouped_gait_cycles, grading, add_params = finding_groupings(
+        num_groups, gait_split_parameter, raw_sensor_data, grading_value, add_param, reverse=False
+    )
+    
+    filtered_groups, filtered_add_param, filtered_gait_groups = filter_groups(groups, grouped_gait_cycles, add_params)
+
+    if len(filtered_groups) < 3:
+        print("Trying the reverse")
+        groups, grouped_gait_cycles, grading, add_params = finding_groupings(
+            num_groups, gait_split_parameter, raw_sensor_data, grading_value, add_param, reverse=True
+        )
+        filtered_groups, filtered_add_param, filtered_gait_groups = filter_groups(groups, grouped_gait_cycles, add_params)
 
         if len(filtered_groups) < 3:
             raise ValueError("Insufficient group sizes available for this participant")
     
-    groups, gaitcycles, add_parameter = random_sampling(filtered_groups, filtered_gait_groups, filtered_add_param)
-    print(len(add_parameter))
-    print(type(add_parameter[0][0]))
-    
+    groups, gaitcycles, add_parameter = random_sampling(filtered_groups, filtered_gait_groups, filtered_add_param, grading_value, tolerance)
     return groups, gaitcycles, add_parameter
 
+def get_participant_info(participant_id):
+    participant = participant_info[participant_info['Participant_ID'] == participant_id]
+    if not participant.empty:
+        height = participant.iloc[0]['Height']
+        side = int(participant.iloc[0]['Side'])
+        return height, side
+    else:
+        return None, None
+
+##################################################################################################################################################################################
 
 """Main section of code for processing participants"""
-
 #Dictionary to map the sensor locations to their IDs.
 sensor_mappings = {
     'pelvis': 1,
@@ -454,40 +435,13 @@ bucket_name = 'gaitbfb_propellab'
 blobs = storage_client.list_blobs(bucket_name, prefix = base_directory)
 prefix_from_bucket = 'Wearable Biofeedback System (REB-0448)/Data/Raw Data/' 
 
-#participant_list = ['LLPU_P01','LLPU_P02','LLPU_P03','LLPU_P04','LLPU_P05','LLPU_P06','LLPU_P08','LLPU_P09','LLPU_P10','LLPU_P12','LLPU_P14','LLPU_P15']
-#participant_list = ['LLPU_P01','LLPU_P02','LLPU_P03','LLPU_P04','LLPU_P05','LLPU_P06','LLPU_P08','LLPU_P09','LLPU_P10','LLPU_P12','LLPU_P15']
-#participant_list = ['LLPU_P09','LLPU_P10','LLPU_P12','LLPU_P15']
 participant_list = ['LLPU_P01','LLPU_P02','LLPU_P03','LLPU_P04','LLPU_P05','LLPU_P06','LLPU_P08','LLPU_P09','LLPU_P10','LLPU_P12','LLPU_P15']
-#participant_list = ['LLPU_P08','LLPU_P09','LLPU_P10','LLPU_P12','LLPU_P15']
+participant_info = pd.read_excel("Q:\\main_propellab\\Users\\Ng, Gabe\\Summer Student 2024\\LLA Participant Investigations\\LLPU_Height_ProstheticSide.xlsx") #Used to determine heights and prosthetic sides as needed.
 
 
-STSR_full = []
-StepLength_full = []
-GPS_full = []
-
-participant_info = pd.read_excel('Q:\\main_propellab\\Users\\Ng, Gabe\\Summer Student 2024\\LLPU_DataSummaries\\LLPU_Height_ProstheticSide.xlsx')
-
-def get_participant_info(participant_id):
-    participant = participant_info[participant_info['Participant_ID'] == participant_id]
-    if not participant.empty:
-        height = participant.iloc[0]['Height']
-        side = int(participant.iloc[0]['Side'])
-        return height, side
-    else:
-        return None, None
-
-#Dictionary to map the sensor locations to their IDs.
-sensor_mappings = {
-    'pelvis': 1,
-    'UpperR': 2,
-    'LowerR': 3,
-    'UpperL': 5,
-    'LowerL': 6
-}
-     
 for participant in participant_list:
-    print(f"Processing participant {participant}")
     
+    print(f"Processing participant {participant}")
     participant_id = participant
     height,side = get_participant_info(participant_id)
     height_m = height/100 
@@ -511,10 +465,8 @@ for participant in participant_list:
     part_gait_params = {}
     part_kinematic_params = {}
     part_sensor_data = {}
-    trial_type = 'LLPU'
-    height_normalized = True
+    trial_type = 'GPS' #Use this to set whatever parameter you're looking to partition by 
 
-   
     logging.info(f"Processing participant {participant}")
     if blobs:
         for blob in blobs:
@@ -556,13 +508,12 @@ for participant in participant_list:
                     file_name = os.path.basename(blob.name)
 
                 except IndexError as e: #Exception based on an Index Error encountered in excel_reader_gcp.py **
-                    #print(f"File skipped: gs://{bucket_name}/{blob.name} due to error: {e}")
                     continue                              
     
     if trial_type in part_gait_params:
         
         if prosth_side == 1: #Prosthetic on the left, reverses the calculation
-            stance_time_symmetry = [1/item for sublist in [i[11] for i in part_gait_params[trial_type]] for item in sublist] # STSR = prosth/non_prosh (the convention is R/L, so this corrects for the prosthetic calc)
+            stance_time_symmetry = [1/item for sublist in [i[11] for i in part_gait_params[trial_type]] for item in sublist] # STSR = prosth/non_prosh (the convention is R/L, so this corrects for the calculation if the prosthetic is on the L)
         else:
             stance_time_symmetry = [item for sublist in [i[11] for i in part_gait_params[trial_type]] for item in sublist]
         
@@ -586,27 +537,26 @@ for participant in participant_list:
             }
             individual_signals.append(signal_dict)
 
-        print(np.shape(individual_signals[0]['pelvis_orient']))    
-        print(np.shape(individual_signals[0]['hip_angle'][0]))
 
         for signal_val in individual_signals:
             gaitprofilescore, gaitvariabilityscore = calc_gait_profile_score(signal_val, partitioned_awinda_control)
-            gait_scores_list.append(gaitprofilescore)
-            gait_variability.append(gaitvariabilityscore)
-
-        GPS_full.append(gait_scores_list)
+            gait_scores_list.append(gaitprofilescore) #GPS
+            gait_variability.append(gaitvariabilityscore) #GVS -- used this for additional analyses to determine how individual components of the GPS are different between different groups
         
-        # print(np.shape(part_sensor_data['pelvis']))
-        # if participant == 'LLPU_P08':
-        #     ordered_groups, ordered_gaitcycles = check_group_configurations(stance_time_symmetry, part_sensor_data,13)
-        # else:
-        #     ordered_groups, ordered_gaitcycles = check_group_configurations(stance_time_symmetry, part_sensor_data,4)
-        ordered_groups, ordered_gaitcycles, ordered_addparam = check_group_configurations(gait_scores_list, part_sensor_data,3, gait_scores_list)
+        """ Use this line if wanting to partition by STSR """
+        
+        if trial_type == 'STSR':
+            if participant == 'LLPU_P08':
+                ordered_groups, ordered_gaitcycles, ordered_addparam = check_group_configurations(stance_time_symmetry, part_sensor_data,13, gait_scores_list, 0.03, 0.005)
+            else:
+                ordered_groups, ordered_gaitcycles, ordered_addparam = check_group_configurations(stance_time_symmetry, part_sensor_data,4, gait_scores_list, 0.03, 0.005)
+        if trial_type == "GPS":
+            ordered_groups, ordered_gaitcycles, ordered_addparam = check_group_configurations(gait_scores_list, part_sensor_data, 3, gait_scores_list, 0.4, 0.05)
+        
         pre_gvs_dict = {}
         post_gvs_dict = {}
         
-        # Define the participant ID
-        participant_id = participant  # Change this to your actual participant ID
+        #Old code when looking at GVS comparisons 
 
         # L0_params = ordered_addparam[1] #second group
         # L2_params = ordered_addparam[-1] #last group
@@ -657,26 +607,21 @@ for participant in participant_list:
         # else:
         #     combined_gvs_df.to_csv(file_path, index=False, header=False, mode='a')
         
-        
-        logging.info("GPS Trial")
+        logging.info(f"{trial_type} Trial")
         ordered_group_means = [round(np.mean(group), 3) for group in ordered_groups]
         ordered_group_min = [round(min(group), 3) for group in ordered_groups]
         ordered_group_max = [round(max(group), 3) for group in ordered_groups]
         group_lengths = [len(group) for group in ordered_groups]
 
-
         for k, group in enumerate(ordered_groups):
             print(f"Group {k+1}: {len(group)} (Mean: {np.mean(group) if group else 'N/A'})")
-        
-        """Splitting of the raw sensor data was done with all of the sensors concatenated along the last axis (i.e. each gait cycle with 40 points would be a 40x30 array (6 axis pelvis + 12 axis upper + 12 axis lower))"""
-        """This is used to split them out into their respective sensor configurations (pelvis, upper, lower)"""
         
         # Pelvis, upper, lower
         combined_sensor_configs = [ordered_gaitcycles['pelvis'], ordered_gaitcycles['Upper'], ordered_gaitcycles['Lower']]   
         arrangements = ['pelvis','upper','lower']  
         for sensor_idx, raw_sensor in enumerate(combined_sensor_configs): #Iterates through each sensor configuration (pelvis, upper, lower)
             
-            # """ DTW Implementation"""
+            """ DTW Implementation"""
             print(f"Sensor arrangement: {arrangements[sensor_idx]}")
             dtw_mean_distances = []
             #Computing the within group distance for baseline
@@ -687,15 +632,15 @@ for participant in participant_list:
             for j in range(1, len(raw_sensor)):
                 dtw_between = tslearn_dtw_analysis(set1 = raw_sensor[0], set2 = raw_sensor[j]) # type: ignore
                 dtw_mean_distances.append(dtw_between)
-                add_row_to_csv(csv_path, arrangements[sensor_idx],'STSR', 'DTW',participant, ordered_group_means[j], dtw_between)
+                #add_row_to_csv(csv_path, arrangements[sensor_idx],'STSR', 'DTW',participant, ordered_group_means[j], dtw_between)
                 
             print(dtw_mean_distances) 
             
-            # """ SOM Implementation"""
+            """ SOM Implementation"""
             # Shuffle and split the list
             #train_arrays, test_arrays = train_test_split(raw_sensor[0], test_size=0.2, random_state=42)
             random.shuffle(raw_sensor[0])
-            train_data = np.concatenate(raw_sensor[0],axis=0)
+            train_data = np.concatenate(raw_sensor[0],axis=0) #Train the SOM on BL data 
             print("Training Data Shape:", train_data.shape)
             print("Training the SOM on baseline data")
             MDP_mean_deviations = []
@@ -707,11 +652,11 @@ for participant in participant_list:
                 test_data = np.concatenate(raw_sensor[j],axis=0)
                 MDP_scores = calculate_MDP(test_data, train_data, trained_SOM, normalize=True) # type: ignore
                 MDP_mean_deviations.append(np.mean(MDP_scores))
-                add_row_to_csv(csv_path, arrangements[sensor_idx],'STSR','MDP',participant, ordered_group_means[j], np.mean(MDP_scores))
+                #add_row_to_csv(csv_path, arrangements[sensor_idx],'STSR','MDP',participant, ordered_group_means[j], np.mean(MDP_scores))
             
             print(f"MDP mean deviations: {MDP_mean_deviations}")
             
-            #Implementing the HMM
+            """HMM Implementation"""
             strides_train_flat = {}
             strides_test_flat = {}
             strides_train = {}
@@ -850,7 +795,6 @@ for participant in participant_list:
                 predictions[idx] = []
                 hmm_models_aligned_states[idx] = []
                 match_trials[idx] = find_best_alignment(hmm_models[0][0], hmm_models[idx][0], test_predict, num_states)
-                
                 roll_amounts[idx] = [0] * len(hmm_models[idx]) #Can now handle different lengths of trained models 
                 
                 for j in range(len(hmm_models[idx])):
@@ -915,7 +859,7 @@ for participant in participant_list:
                     # log HMM-SM similarity
                     print('%s - %s  :  %.5f' % (ordered_group_means[0], ordered_group_means[j], sum_dif))
                     symmrange = '%s - %s' % (ordered_group_means[0], ordered_group_means[j])
-                    add_row_to_csv(csv_path, arrangements[sensor_idx],'GPS','HMM-SM',participant, symmrange, sum_dif)
+                    #add_row_to_csv(csv_path, arrangements[sensor_idx],'GPS','HMM-SM',participant, symmrange, sum_dif)
                     
             else: #If averaging a larger set (multiple HMMs trained)
                 # i and j iterate over the trial types.
@@ -941,7 +885,7 @@ for participant in participant_list:
                     symmrange = '%s - %s' % (round(ordered_group_means[0],3), round(ordered_group_means[j],3))
                     symmranges.append(symmrange)
                     mean_difs.append(mean_dif)
-                    add_row_to_csv(csv_path, arrangements[sensor_idx],'STSR','HMM-SM',participant, symmrange, mean_dif)
+                    #add_row_to_csv(csv_path, arrangements[sensor_idx],'STSR','HMM-SM',participant, symmrange, mean_dif)
                     
                 
                 
