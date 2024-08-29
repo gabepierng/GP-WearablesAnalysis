@@ -21,6 +21,11 @@ import pandas as pd
 import excel_reader_gcp_GN as excel_reader_GN
 import copy
 import re
+import scipy.stats as stats
+import matplotlib as mpl
+from sklearn.neighbors import KernelDensity
+from scipy.stats import gaussian_kde
+
 
 b20, a20 = scipy.signal.butter(N=4, Wn = 0.8, btype = 'lowpass')  # Wn = 0.8 = 40 / Nyquist F = 50Hz
 run_time = datetime.datetime.now().strftime("%d-%m-%y_%H-%M")
@@ -465,6 +470,8 @@ for participant in participant_list:
     part_gait_params = {}
     part_kinematic_params = {}
     part_sensor_data = {}
+    
+    """ SET THE TRIAL TYPE -- done based on which gait parameter you are wanting to sort by """
     trial_type = 'GPS' #Use this to set whatever parameter you're looking to partition by 
 
     logging.info(f"Processing participant {participant}")
@@ -543,7 +550,6 @@ for participant in participant_list:
             gait_scores_list.append(gaitprofilescore) #GPS
             gait_variability.append(gaitvariabilityscore) #GVS -- used this for additional analyses to determine how individual components of the GPS are different between different groups
         
-        """ Use this line if wanting to partition by STSR """
         
         if trial_type == 'STSR':
             if participant == 'LLPU_P08':
@@ -556,7 +562,7 @@ for participant in participant_list:
         pre_gvs_dict = {}
         post_gvs_dict = {}
         
-        #Old code when looking at GVS comparisons 
+        """Old code when looking at GVS comparisons """
 
         # L0_params = ordered_addparam[1] #second group
         # L2_params = ordered_addparam[-1] #last group
@@ -607,6 +613,82 @@ for participant in participant_list:
         # else:
         #     combined_gvs_df.to_csv(file_path, index=False, header=False, mode='a')
         
+        """ Code for visualizing the distributions between groups using KDE """
+        
+        # plt.rcParams["text.usetex"] = False
+        # plt.rcParams["font.family"] = "serif"
+        # plt.rcParams["font.serif"] = "Times New Roman"
+        # label = [r'$\mathit{BL}$', r'$\mathit{L}_{0}$', r'$\mathit{L}_{1}$', r'$\mathit{L}_{2}$']
+
+        # fig, ax = plt.subplots(figsize=(8, 5))
+        # def silverman_bandwidth(data):
+        #     n = len(data)
+        #     std_dev = np.std(data, ddof=1)
+        #     iqr = np.percentile(data, 75) - np.percentile(data, 25)
+        #     bandwidth = 0.9 * min(std_dev, iqr / 1.34) * n ** (-1 / 5.0)
+        #     return bandwidth
+
+        # def scott_bandwidth(data):
+        #     n = len(data)
+        #     std_dev = np.std(data, ddof=1)
+        #     bandwidth = std_dev * n ** (-1 / 5.0)
+        #     return bandwidth
+
+        # # Create a list to store the limits of KDE plots
+        # kde_limits = []
+
+        # for level, group in enumerate(ordered_groups):
+        #     # Plot scatter points
+        #     shapiro_test = stats.shapiro(group)
+        #     if shapiro_test.pvalue > 0.05:
+        #         print("Normal")
+        #     for value in group:
+        #         ax.scatter(level, value, color='black', facecolors='None')
+        #     if level in range(len(ordered_groups)):
+        #         group_mean = np.mean(group)
+        #         ax.hlines(y=group_mean, xmin=level - 0.1, xmax=level + 0.6, colors='red')
+        #         # Find the last scatter point for the level
+        #         last_point = max(group)
+        #         # Place the label just above the last scatter point
+        #         ax.text(x=level+ 0.2, y=group_mean + min(group)/1000, s=f'{math.floor(group_mean * 100) / 100.0}', 
+        #                 ha='center', va='bottom', fontsize=18, color='red')
+            
+        #     # Kernel density estimation for each group
+        #     x_d = np.linspace(min(group) - min(group)/50, max(group) + min(group)/50, 1000)[:, np.newaxis]
+        #     group_array = np.array(group)[:, np.newaxis]
+        #     print(silverman_bandwidth(group))
+        #     adj_val = 0.0025
+        #     kde = KernelDensity(kernel='gaussian', bandwidth=silverman_bandwidth(group)).fit(group_array)
+        #     log_dens = kde.score_samples(x_d)
+            
+        #     # Normalize the density plot to fit within the x-axis of the scatter plot
+        #     density = np.exp(log_dens)
+        #     kde_limit = density.max()*2
+        #     kde_limits.append(kde_limit)
+            
+        #     # Plot the KDE curve right next to the scatter plot
+        #     ax.plot(level  + 0.05 + density/kde_limit, x_d, color='black', linewidth=1)
+
+        # # Set tick parameters and labels
+        # ax.tick_params(axis='both', which='major', labelsize=18)
+        # ax.set_ylabel("STSR", fontsize=18)
+        # ax.set_xlabel("Levels", fontsize=18)
+
+        # # Apply the labels directly to the x-ticks
+        # ax.set_xticks(ticks=range(len(label)))
+        # ax.set_xticklabels(labels=label, fontsize=18, family='serif', fontname='Times New Roman')
+
+        # ax.spines['top'].set_visible(False)
+        # ax.spines['right'].set_visible(False)
+        # plt.tight_layout()
+
+        # from matplotlib.lines import Line2D
+        # mean_line = Line2D([0], [0], color='red', lw=2, label='Mean STSR')
+
+        # # Add the legend
+        # ax.legend(handles=[mean_line], loc='upper left', fontsize=18, frameon=False)
+        # plt.show()
+                
         logging.info(f"{trial_type} Trial")
         ordered_group_means = [round(np.mean(group), 3) for group in ordered_groups]
         ordered_group_min = [round(min(group), 3) for group in ordered_groups]
