@@ -11,8 +11,8 @@ We investigated multiple paradigms and strategies for gait assessment, including
 <div align="center">
 
 <p float="left">
-  <img align="top" align="middle" width="40%" src="assets/HMM-SM_Algorithm_Model_Overview.svg" style="display: inline-block; margin-right: 100px; auto; max-width: 500px"/>
-  <img align="top" align="middle" width="40%" src="assets/Annotated_results.svg" style="display: inline-block; margin: 0 auto; max-width: 250px"/>
+  <img align="top" align="middle" width="40%" src="assets/HMM-SM_Algorithm_Model_Overview.svg" style="display: inline-block; margin-right: 100px; auto; max-height: 200px"/>
+  <img align="top" align="middle" width="40%" src="assets/Annotated_results.svg" style="display: inline-block; margin: 0 auto; max-height: 200px"/>
   
 </p>
 
