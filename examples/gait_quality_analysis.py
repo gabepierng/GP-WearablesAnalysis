@@ -28,13 +28,14 @@ bfb_participants = ['LLPU_P02', 'LLPU_P03', 'LLPU_P05', 'LLPU_P06', 'LLPU_P07', 
 
 participant_info = pd.read_csv(bucket_dir + 'Gait Quality Analysis/Data/Participant_Data/Raw Data/participant_info.csv')    # file containing main participant info
 
+# experiment parameters
 resize_len = 40
 strides_to_concat = 10
 num_states=2
 train_iterations = 1000
 train_tolerance = 1e-2
 num_models_train = 1
-num_models_train_control = 2
+num_models_train_control = 10
 num_control_participants = 30
 
 sensors_to_test = 'Lower R+L'
@@ -46,17 +47,23 @@ b20, a20 = scipy.signal.butter(N=4, Wn = 0.8, btype = 'lowpass')  # Wn = 0.2 = 1
 
 signals_of_interest = ['Acc_X', 'Acc_Y', 'Acc_Z', 'Gyr_X', 'Gyr_Y', 'Gyr_Z']
 
-sensor_combos = [['Pelvis'],
-                ['LowerR', 'LowerL'],
-                ['UpperR', 'UpperL']
-                ]
-
 gvs_keys = ['pelvis_x', 'pelvis_y', 'pelvis_z',
                'r_hip_x', 'r_hip_y', 'r_hip_z',
                'l_hip_x', 'l_hip_y', 'l_hip_z',
                'r_knee_flex', 'l_knee_flex',
                'r_ankle_flex', 'l_ankle_flex',
                'r_foot_prog', 'l_foot_prog']
+
+gait_model_results = {'Participant': [],
+                        'GPS': [],
+                        'HMM-SM': [],
+                        'DTW': [],
+                        'MDP': [],
+                        'INI': [],
+                        'MGS': []}
+
+for key in gvs_keys:
+    gait_model_results[key] = []
 
 mgs_aspects = [
     np.arange(0,16),
@@ -68,8 +75,7 @@ mgs_aspects = [
 ]
 
 
-
-##### READ AND STORE XSENS DATA #####
+##### COMPILE XSENS DATASET FROM PARTICIPANT DATA #####
 # print('Importing participant data...')
 target_strides_per_control = 10
 
@@ -108,17 +114,6 @@ logging.info('Calculated INI control eigenvalues and eigenvectors')
 participant_data = [dataset.partitioned_gait_data[i] for i in dataset.partitioned_gait_data if not (i == 'control')]
 compiled_mgs_params, reduced_param_set = cm.determine_mgs_reduced_param_set(dataset.partitioned_gait_data['control'], dataset.control_strides_per_part, participant_data)
 
-gait_model_results = {'Participant': [],
-                        'GPS': [],
-                        'HMM-SM': [],
-                        'DTW': [],
-                        'MDP': [],
-                        'INI': [],
-                        'MGS': []}
-
-for key in gvs_keys:
-    gait_model_results[key] = []
-
 concat_strides = {}
 
 for trial_type in trial_types:
@@ -133,6 +128,7 @@ for trial_type in trial_types:
     concat_strides[trial_type] = np.array(concat_strides[trial_type])
     concat_strides[trial_type] = scipy.signal.filtfilt(b20, a20, concat_strides[trial_type], axis=1)
 
+###### TRAIN HMMs ON PARTICIPANT DATA ######
 hmm_models = {}
 
 for trial_type in trial_types:
@@ -163,53 +159,10 @@ for trial_type in trial_types:
 
     logging.info(f'Trained HMM models for participant {trial_type}')
 
-# alignment_stride = strides_test[trial_types[0]][1]
-
-# pred_vals = np.ones(num_states)
-# for i in range(num_states):
-#     pred_vals[i] = min_predict + ((i * (max_predict - min_predict)) / (num_states - 1))
-
-# roll_amounts = {}
-# match_trials = {}
-
-# for trial_type in trial_types:
-#     if(trial_type == 'control'):
-#         n_train = num_models_train_control
-#     else:
-#         n_train = num_models_train
-#     roll_amounts[trial_type] =[0 for i in range(n_train)]
-#     match_trials[trial_type] = 0
-
-# shift_all = 0
-
-# predictions = {}
-# hmm_models_aligned_states = {}
-
-# for i, trial_type in enumerate(trial_types):
-#     predictions[trial_type] = []
-#     hmm_models_aligned_states[trial_type] = []
-#     match_trials[trial_type] = find_best_alignment(hmm_models[trial_types[0]][0], hmm_models[trial_type][0], test_predict)
-
-#     if(trial_type == 'control'):
-#         n_train = num_models_train_control
-#     else:
-#         n_train = num_models_train
-#     for j in range(n_train):
-        
-#         roll_amounts[trial_type][j] = find_best_alignment(hmm_models[trial_type][0], hmm_models[trial_type][j], test_predict) + match_trials[trial_type]
-#         # roll_amounts[trial_type][j] = 0
-#         hmm_models_aligned_states[trial_type].append(align_states(hmm_models[trial_type][j], roll_amounts[trial_type][j] + shift_all))
-#         predictions[trial_type].append(hmm_models_aligned_states[trial_type][-1].model.predict(test_predict))
-
-# for i in range(1, len(trial_types)):
+###### COMPUTE RESULTS FOR HMM-SM AND OTHER GAIT MODELS ######
 for i, (trial_type, participant_data) in enumerate(islice(dataset.partitioned_gait_data.items(), 1, None), start=1):
 
     hmmsm = hmmsm_model.compute_hmmsm(hmm_models['control'], hmm_models[trial_types[i]], num_states)
-
-    indices = np.arange(len(partitioned_strides[trial_types[i]]))
-    test_mdp_dtw_data = partitioned_strides[trial_type][indices[:50]]   # sample 50 gait cycles from each participant to test MDP
-    # dtw = cm.tslearn_dtw_analysis(control_strides, test_mdp_dtw_data)
-    # mdp = cm.calculate_mean_MDP(test_mdp_data, control_strides, train_som)
     dtw = cm.tslearn_dtw_analysis(control_strides, partitioned_strides[trial_type])
     mdp = cm.calculate_mean_MDP(partitioned_strides[trial_type], control_strides, train_som)
 
