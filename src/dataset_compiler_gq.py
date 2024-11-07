@@ -1,4 +1,4 @@
-import src.excel_reader_gcp as excel_reader
+import src.excel_reader_gcp_gq as excel_reader
 from google.cloud import storage
 import numpy as np
 import scipy
