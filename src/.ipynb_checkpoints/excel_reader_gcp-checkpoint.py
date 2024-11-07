@@ -38,8 +38,8 @@ import scipy.interpolate as interp
 import scipy
 import sklearn.metrics as metrics
 
-plot_colors = ['black', 'red', 'blue', 'green']
-#plot_colors = ['blue', 'orange', 'green', 'red', 'purple', 'brown', 'pink', 'grey']
+# plot_colors = ['black', 'red', 'blue', 'green']
+plot_colors = ['blue', 'orange', 'green', 'red', 'purple', 'brown', 'pink', 'grey']
 sides = ['Right', 'Left']
 joint_planes = ['Abd/Add', 'Int/Ext Rot', 'Flex/Ext']
 axis_planes = ['x', 'y', 'z']
@@ -104,14 +104,14 @@ Input:  strides = list of strides to plot (if confidence plot, must be 2d reshap
         signal_axis = which axis of signal to plot (0:X, 1:Y, 2:Z)
 '''
 def visualize_strides(strides, fig_ax, signal_axis, trial_num, confidence_plot = True):
-    
+
     if(confidence_plot):
-        #plot_signals = trial_avg_and_CI(strides[:,:,signal_axis])
+#         plot_signals = trial_avg_and_CI(strides[:,:,signal_axis])
         plot_signals = trial_avg_and_CI(strides[:,:])
-        x = np.linspace(0, strides.shape[1], strides.shape[1])
+        x = np.linspace(0, 100, strides.shape[1])
         fig_ax.plot(x, plot_signals[0], color=plot_colors[trial_num])
         fig_ax.fill_between(x, plot_signals[1], plot_signals[2], color=plot_colors[trial_num], alpha=0.2)
-        
+
     else:
         plt.ylabel('Degrees (º)')
 
@@ -205,7 +205,7 @@ class XsensGaitDataParser:
                             foot position vector, and frame rate MVN samples at for trial
     Output: Spatiotemporal parameters
     '''
-    def calc_spatio_temp_params(self, gait_events, pelvis_position, foot_position, frame_rate, knee_angles, hip_angles, foot_velocity, lower_leg_orientation):
+    def calc_spatio_temp_params(self, gait_events, pelvis_position, foot_position, frame_rate, knee_angles, hip_angles):
         # inputs are Nx3 vectors with 3D position coordinates
         def calc_distances(positions1, positions2):
             # can generally ignore z-axis, remove before doing calculations
@@ -241,14 +241,15 @@ class XsensGaitDataParser:
                     l_to_r_steps.append([l_gait_events[0,i], valid_step[0], l_gait_events[1,i]])
 
             r_to_l_steps = np.array(r_to_l_steps).T
-            l_to_r_steps = np.array(l_to_r_steps).T
+            # l_to_r_steps = np.array(l_to_r_steps).T
+            
             r_to_l_strides = np.array(r_to_l_strides).T
 
             # double stance double_stance_support as percent of gait cycle
             r_dbl_stnc_sprt = np.mean(r_to_l_steps[2,:] - r_to_l_steps[1,:]) / (stride_time[0] * frame_rate)
             # l_dbl_stnc_sprt = np.mean(l_to_r_steps[2,:] - l_to_r_steps[1,:]) / (stride_time[1] * frame_rate)
-            #double_stance_support =  [r_dbl_stnc_sprt, l_dbl_stnc_sprt]
-            double_stance_support =  r_dbl_stnc_sprt
+            # double_stance_support = [r_dbl_stnc_sprt, l_dbl_stnc_sprt]
+            double_stance_support = r_dbl_stnc_sprt
             
             r_to_l_step_lengths = calc_distances(foot_position[0, r_to_l_steps[0,:]],
                                                         foot_position[1, r_to_l_steps[1,:]])
@@ -289,11 +290,9 @@ class XsensGaitDataParser:
             hip_ROMs = np.array([np.array([np.max(hip_angles[0][stride[0]:stride[2]], axis=0) - np.min(hip_angles[0][stride[0]:stride[2]], axis=0),
                             np.max(hip_angles[1][stride[3]:stride[5]], axis=0) - np.min(hip_angles[1][stride[3]:stride[5]], axis=0)]) for stride in r_to_l_strides.T])
             
-            # ankle_ROMs = np.array([np.array([np.max(ankle_angles[0][stride[0]:stride[2]], axis=0) - np.min(ankle_angles[0][stride[0]:stride[2]], axis=0),
-            #                 np.max(ankle_angles[1][stride[3]:stride[5]], axis=0) - np.min(ankle_angles[1][stride[3]:stride[5]], axis=0)]) for stride in r_to_l_strides.T])
 
+            # return [double_stance_support, step_length_avg, step_length_std, step_lengths, stride_length_SR, stance_time_ratio, knee_ROMs, knee_ROM_SR, hip_ROMs, stride_lengths]
             return [double_stance_support, step_lengths, stride_length_SR, stance_time_ratio, knee_ROMs, knee_ROM_SR, hip_ROMs, stride_lengths]
-            #return [double_stance_support, step_length_avg, step_length_std, step_lengths, stride_length_SR, stance_time_ratio, knee_ROMs, knee_ROM_SR, hip_ROMs, stride_lengths, ankle_ROMs]
             # return [double_stance_support, step_length_avg, step_length_std, step_lengths, stride_length_SR, stance_times, knee_ROMs, knee_ROM_SR, hip_ROMs]
 
         r_gait_events = gait_events[0]
@@ -304,8 +303,8 @@ class XsensGaitDataParser:
                                    np.mean((l_gait_events[2,:] - l_gait_events[0,:]) / frame_rate)]
         # calculate non-step gait parameters (easier calculations)
         # frames from HS to TO same foot
-        stance_times = np.array([(r_gait_events[1,:] - r_gait_events[0,:]) / frame_rate,
-                        (l_gait_events[1,:] - l_gait_events[0,:]) / frame_rate])
+        stance_times = [(r_gait_events[1,:] - r_gait_events[0,:]) / frame_rate,
+                        (l_gait_events[1,:] - l_gait_events[0,:]) / frame_rate]
 
         stance_time_avg = [np.mean(stance_times[0]) / gait_cycle_time_mean[0], 
                         np.mean(stance_times[1]) / gait_cycle_time_mean[1]]
@@ -314,8 +313,8 @@ class XsensGaitDataParser:
                             np.std(stance_times[1], ddof=1)]
 
         # frames from TO to next HS same foot
-        swing_times = np.array([(r_gait_events[2,:] - r_gait_events[1,:]) / frame_rate,
-                        (l_gait_events[2,:] - l_gait_events[1,:]) / frame_rate])
+        swing_times = [(r_gait_events[2,:] - r_gait_events[1,:]) / frame_rate,
+                        (l_gait_events[2,:] - l_gait_events[1,:]) / frame_rate]
         
         swing_time_avg = [np.mean(swing_times[0]),
                         np.mean(swing_times[1])]
@@ -327,12 +326,8 @@ class XsensGaitDataParser:
         stance_time_ratio = stance_time_avg[0] / stance_time_avg[1]
         swing_time_ratio = swing_time_avg[0] / swing_time_avg[1]
 
-        stride_times = np.array([(r_gait_events[2,:] - r_gait_events[0,:]) / frame_rate,
-                        (l_gait_events[2,:] - l_gait_events[0,:]) / frame_rate])
-        
-        
-        step_times = np.array([(r_gait_events[2,:] - l_gait_events[0,:]) / frame_rate,
-                        (l_gait_events[0,:] - r_gait_events[0,:]) / frame_rate])
+        stride_times = [(r_gait_events[2,:] - r_gait_events[0,:]) / frame_rate,
+                        (l_gait_events[2,:] - l_gait_events[0,:]) / frame_rate]
 
         stride_time_avg = [np.mean(stride_times[0]),
                             np.mean(stride_times[1])]
@@ -376,18 +371,6 @@ class XsensGaitDataParser:
         ind_cadence = (2 / ind_walk_time) * 60
 
         step_based_params = calc_step_params(stride_time_avg)
-        # double_stance_support = step_based_params[0]
-        # step_length_avg = step_based_params[1]
-        # step_length_std = step_based_params[2]
-        # step_lengths = step_based_params[3]
-        # stride_length_SR = step_based_params[4]
-        # stance_time_ratio_ind = step_based_params[5]
-        # knee_ROMs = step_based_params[6]
-        # knee_ROM_SR = step_based_params[7]
-        # hip_ROMs = step_based_params[8]
-        # stride_lengths = step_based_params[9]
-        # ankle_ROMs = step_based_params[10]
-        
         double_stance_support = step_based_params[0]
         # step_length_avg = step_based_params[1]
         # step_length_std = step_based_params[2]
@@ -398,8 +381,7 @@ class XsensGaitDataParser:
         knee_ROM_SR = step_based_params[5]
         hip_ROMs = step_based_params[6]
         stride_lengths = step_based_params[7]
-        
-        
+
         # spatio_temp_params = [stance_time_ratio, swing_time_ratio, double_stance_support,
         #                     step_length_avg, stride_length_avg, stride_time_avg, cadence, 
         #                     speed, stance_time_avg, stance_time_std, step_lengths, stride_length_SR, stance_time_ratio_ind, knee_ROMs, hip_ROMs, stride_lengths,
@@ -409,7 +391,6 @@ class XsensGaitDataParser:
                             stride_length_avg, stride_time_avg, cadence, 
                             speed, stance_time_avg, stance_time_std, step_lengths, stride_length_SR, stance_time_ratio_ind, knee_ROMs, hip_ROMs, stride_lengths,
                             ind_speed, ind_cadence]
-        
 
         return spatio_temp_params
 
@@ -505,18 +486,6 @@ class XsensGaitDataParser:
 
     def get_sternum_euler_orientation(self):
         return np.expand_dims(np.transpose([self.mvnxData['Sternum Orient ' + plane] for plane in axis_planes]), axis=0)
-    
-    def get_lower_leg_orientation(self):
-        return np.array([ np.transpose([self.mvnxData['Right Lower Leg Orient ' + plane] for plane in axis_planes]),
-                np.transpose([self.mvnxData['Left Lower Leg Orient ' + plane] for plane in axis_planes]) ])
-    
-    def get_lower_leg_velocity(self):
-        return np.array([ np.transpose([self.mvnxData['Right Lower Leg Velocity ' + plane] for plane in axis_planes]),
-                np.transpose([self.mvnxData['Left Lower Leg Velocity ' + plane] for plane in axis_planes]) ])
-    
-    def get_foot_velocity(self):
-        return np.array([ np.transpose([self.mvnxData['Right Foot Velocity ' + plane] for plane in axis_planes]),
-                np.transpose([self.mvnxData['Left Foot Velocity ' + plane] for plane in axis_planes]) ])
 
     def get_pelvis_position(self):
         return np.transpose([self.mvnxData['Pelvis Position ' + plane] for plane in axis_planes])
@@ -674,12 +643,9 @@ class XsensGaitDataParser:
 
         pelvis_euler_orientation = self.get_pelvis_euler_orientation()
         sternum_euler_orientation = self.get_sternum_euler_orientation()
-        lower_leg_orientation = self.get_lower_leg_orientation()
-        foot_velocity = self.get_foot_velocity()
         hip_angles = self.get_hip_angles()
         knee_angles = self.get_knee_angles()
         ankle_angles = self.get_ankle_angles()
-        
 
         # plt.figure()    
         # plt.plot(pelvis_euler_orientation[0,:,2], color = 'black')
@@ -711,7 +677,7 @@ class XsensGaitDataParser:
         # or stopping at beginning/end of trial skews centroid of data
         center = [0,0]
         center = [(endPos[0] + startPos[0]) / 2, (endPos[1] + startPos[1]) / 2]
-        #center[0], center[1], _ = centroid_poly(pelvis_position[:,0], pelvis_position[:,1])
+        # center[0], center[1], _ = centroid_poly(pelvis_position[:,0], pelvis_position[:,1])
         
         dist = np.sqrt((endPos[0] - center[0])**2 + (endPos[1] - center[1])**2)
 
@@ -735,8 +701,8 @@ class XsensGaitDataParser:
         plt.xlim([-5, 25])
         plt.ylim([-15, 15])
         plt.show()
-       
         '''
+        
 
         # retrieve foot contact data, used to identify valid heel strikes and corresponding toe-offs
         seq = [0., 1.]
@@ -754,7 +720,6 @@ class XsensGaitDataParser:
         Return: N x 6 array, where each row is a matched r/l gait cycle
 
         '''
-        
         def find_valid_r_l_strides(gait_events):
             
             r_gait_events = gait_events[0]
@@ -800,23 +765,11 @@ class XsensGaitDataParser:
                                             else self.divide_into_strides(self.gait_events, acc_data, side='r', signal_num=i) for i in range(len(sensors))]
         
         # specific participant occasionally knocked left thigh-sensor mid-trial. This filters out those strides
-        if '/MI' in mvn_csv_filename:
-            # Define the filtering condition
-            def get_filtered_indices(data):
-                return [i for i, stride in enumerate(data) if np.max(stride[:,1]) - np.min(stride[:,1]) < 4.5]
-
-            # Get the indices of filtered strides from 'gyro_data[5]'
-            filtered_indices = get_filtered_indices(self.partitioned_mvn_data['gyro_data'][5])
-            
-            # Apply the same indices to filter other data types
-            self.partitioned_mvn_data['gyro_data'][5] = [self.partitioned_mvn_data['gyro_data'][5][i] for i in filtered_indices]
-            self.partitioned_mvn_data['gyro_data'][2] = [self.partitioned_mvn_data['gyro_data'][2][i] for i in filtered_indices]
-            self.partitioned_mvn_data['acc_data'][5] = [self.partitioned_mvn_data['acc_data'][5][i] for i in filtered_indices]
-            self.partitioned_mvn_data['acc_data'][2] = [self.partitioned_mvn_data['acc_data'][2][i] for i in filtered_indices]
-            
+        if('/MI' in mvn_csv_filename):
+            partitioned_mvn_data['gyro_data'][5] = [stride for stride in self.partitioned_mvn_data['gyro_data'][5] if np.max(stride[:,1]) - np.min(stride[:,1]) < 4.5]
+        
         # print('Calculating spatiotemporal parameters...')
-        self.gait_params['spatio_temp'] = self.calc_spatio_temp_params(self.gait_events, pelvis_position, foot_position, frame_rate, knee_angles, hip_angles, 
-                                                                       foot_velocity, lower_leg_orientation)
+        self.gait_params['spatio_temp'] = self.calc_spatio_temp_params(self.gait_events, pelvis_position, foot_position, frame_rate, knee_angles, hip_angles)
 
         # print('Calculating kinematic parameters...')
         self.gait_params['kinematics'] = self.calc_kinematic_params(self.gait_events, pelvis_euler_orientation, hip_angles, knee_angles, ankle_angles, sternum_euler_orientation)
