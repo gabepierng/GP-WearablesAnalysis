@@ -12,11 +12,11 @@ import src.hmmsm_model as hmmsm_model
 
 run_time = datetime.datetime.now().strftime("%y-%m-%d_%H-%M")
 
-if not(os.path.isdir('../log_files')):
-    os.mkdir('../log_files')
+if not(os.path.isdir('log_files')):
+    os.mkdir('log_files')
 
 # log script running in log file to monitor training run
-logging.basicConfig(filename=f'../log_files/{run_time}_GQA.log',
+logging.basicConfig(filename=f'log_files/{run_time}_GQA.log',
                     format = "%(asctime)s %(levelname)s %(message)s",
                     level = logging.INFO)
 
