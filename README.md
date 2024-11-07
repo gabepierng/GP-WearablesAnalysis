@@ -8,13 +8,11 @@ This work primarily explored using a hidden Markov model-based similarity measur
 
 We investigated multiple paradigms and strategies for gait assessment, including assessing relative changes within individual's and absolute assessment of gait quality. Both the relative and absolute paradigms employed the same sets of models, but employed different frameworks for assessing and comparing gait data. This demonstrates the potential flexibility of our methods for assessing overall gait patterns at different scales (e.g., individual-specific changes over short timespans as well as differences between individuals in a population), reducing or eliminating the need for labeling data, retraining models, and collecting large datasets.
 
-<div align="center">
 
-<p float="left">
-  <img align="top" align="middle" width="40%" src="assets/HMM-SM_Algorithm_Model_Overview.svg" style="display: inline-block; margin-right: 100px; auto; height: 200px"/>
-  <img align="top" align="middle" width="40%" src="assets/Annotated_results.svg" style="display: inline-block; margin: 0 auto; height: 200px, width: 225px"/>
-  
-</p>
+<div style="display: flex; justify-content: center; align-items: center; gap: 50px;">
+  <img src="assets/HMM-SM_Algorithm_Model_Overview.svg" alt="Image 1" style="height: 200px;">
+  <img src="assets/Annotated_results.svg" alt="Image 2" style="height: 200px;">
+</div>
 
 <div align="left">
 
